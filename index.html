@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v6</title>
+<title>θ WAVE — Attentional Blink Lab v7</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -200,7 +200,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v6</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v7</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -215,7 +215,7 @@
     <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v6 changelog:</strong> T1 red digit Even/Odd task &middot; T2 discarded if T1 wrong &middot; Crash fix (hud-t1acc) &middot; Stacked column response buttons &middot; SOA 50–600ms &middot; τ=250ms &middot; 70/30 hybrid sampling
+    <strong>v7 changelog:</strong> Zero ISI backward masking &middot; Low-contrast T2 (#606060) &middot; X-confusable distractor pool &middot; Smaller T1 font (harder ID) &middot; T1 Even/Odd dual task &middot; SOA 50–600ms
   </div>
   <div style="display:flex;flex-direction:column;gap:10px;align-items:center;width:100%;max-width:240px;">
     <button class="btn-primary" onclick="showScreen('calibration-screen')">Begin Session</button>
@@ -405,7 +405,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v6 — Attentional Blink Theta Estimator
+//  θ WAVE v7 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -676,12 +676,15 @@ const QUEST = (() => {
 // ════════════════════════════════════════════════════════════════════
 const BG_COLOR        = 'rgb(128,128,128)';
 const DIST_COLOR      = '#222222';
+const T2_COLOR        = '#606060'; // low contrast vs bg #808080 — requires attention to detect
 const T1_COLOR        = '#cc0000';
 const FIX_COLOR       = '#1a1a1a';
 const FRAMES_PER_ITEM = 12;   // ~100ms @ 120Hz, ~167ms @ 60Hz
-const STIM_FRAMES     = 11;   // letter visible frames within each item slot
-const FONT_FACE       = 'bold 108px Arial, Helvetica, sans-serif';
-const LETTER_POOL     = ['A','B','C','D','E','F','G','H','J','K','L','M','N','P','R','T','U','V','W','Y'];
+const STIM_FRAMES     = 12;   // = FRAMES_PER_ITEM: zero ISI, backward masking on every item
+const FONT_FACE       = 'bold 108px Arial, Helvetica, sans-serif'; // distractor font
+const T1_FONT_FACE    = 'bold 72px Arial, Helvetica, sans-serif';  // T1 smaller = harder to ID
+const LETTER_POOL     = ['K','V','Y','Z','N','W','M','H','I','T','F','E','L','J','P','R','U','C'];
+// X-confusable letters dominate: K,V,Y,Z,N,W share strokes with X (X itself excluded — T2 only)
 const DIGIT_POOL      = ['0','1','2','3','4','5','6','7','8','9'];
 const EVEN_DIGITS     = new Set(['0','2','4','6','8']);
 const CATCH_RATE      = 0.25; // fraction of trials with no T2 (~25% keeps participant honest)
@@ -979,7 +982,7 @@ function enterTargetPhase() {
   phase = 'target'; phaseFrame = 0; phaseItem = 0;
   currentItem = isCatch
     ? {char:pickLetter(), color:DIST_COLOR, role:'dist'}
-    : {char:'X',          color:DIST_COLOR, role:'T2'};
+    : {char:'X',          color:T2_COLOR,   role:'T2'};
   // Response collected retrospectively via Yes/No buttons after stream
 }
 
@@ -996,7 +999,7 @@ function drawItemFrame(){
 
 function drawItem(item){
   drawBg();
-  ctx.font=FONT_FACE;
+  ctx.font = item.role==='T1' ? T1_FONT_FACE : FONT_FACE;
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillStyle=item.color;
   ctx.fillText(item.char, canvas.width/2, canvas.height/2);
