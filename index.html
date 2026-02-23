@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v5</title>
+<title>θ WAVE — Attentional Blink Lab v6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -99,16 +99,16 @@
     background:linear-gradient(90deg,var(--danger),var(--warning),var(--success));
     transition:width 0.6s ease;}
   .response-prompt{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-    display:flex;flex-direction:row;align-items:flex-start;gap:24px;z-index:20;
+    display:flex;flex-direction:column;align-items:stretch;gap:0;z-index:20;
     background:rgba(8,8,15,0.92);border:1px solid var(--border);border-radius:20px;
-    padding:20px 24px;backdrop-filter:blur(12px);}
-  .response-block{display:flex;flex-direction:column;align-items:center;gap:12px;}
-  .response-divider{width:1px;background:var(--border);align-self:stretch;margin:4px 0;}
-  .response-question{font-family:var(--font-display);font-size:10px;font-weight:700;
+    padding:16px 20px;backdrop-filter:blur(12px);width:min(300px,88vw);}
+  .response-block{display:flex;flex-direction:column;align-items:stretch;gap:8px;}
+  .response-divider{height:1px;background:var(--border);margin:12px 0;}
+  .response-question{font-family:var(--font-display);font-size:9px;font-weight:700;
     letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);text-align:center;}
-  .response-btns{display:flex;gap:10px;}
-  .resp-yes,.resp-no,.resp-even,.resp-odd{width:90px;height:52px;border-radius:10px;border:2px solid;
-    font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:1.5px;
+  .response-btns{display:flex;flex-direction:column;gap:8px;}
+  .resp-yes,.resp-no,.resp-even,.resp-odd{width:100%;height:52px;border-radius:10px;border:2px solid;
+    font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:2px;
     text-transform:uppercase;cursor:pointer;transition:all 0.1s;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;
     opacity:1;}
@@ -200,7 +200,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v5</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v6</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -215,7 +215,7 @@
     <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v5 changelog:</strong> T1 is now a red digit (Even/Odd task) &middot; T2 data discarded if T1 wrong &middot; SOA 50–600ms &middot; τ=250ms &middot; 70/30 hybrid sampling &middot; Damped sine likelihood
+    <strong>v6 changelog:</strong> T1 red digit Even/Odd task &middot; T2 discarded if T1 wrong &middot; Crash fix (hud-t1acc) &middot; Stacked column response buttons &middot; SOA 50–600ms &middot; τ=250ms &middot; 70/30 hybrid sampling
   </div>
   <div style="display:flex;flex-direction:column;gap:10px;align-items:center;width:100%;max-width:240px;">
     <button class="btn-primary" onclick="showScreen('calibration-screen')">Begin Session</button>
@@ -301,6 +301,10 @@
     <div class="hud-item">
       <div class="hud-label">Trial</div>
       <div class="hud-val" style="color:var(--text)" id="hud-trial">0 / 120</div>
+    </div>
+    <div class="hud-item" style="align-items:center;">
+      <div class="hud-label">T1 Acc</div>
+      <div class="hud-val" id="hud-t1acc">—</div>
     </div>
     <div class="hud-item" id="hud-soa-item" style="align-items:center;visibility:hidden;">
       <div class="hud-label">T1&rarr;T2 SOA</div>
@@ -401,7 +405,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v5 — Attentional Blink Theta Estimator
+//  θ WAVE v6 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -1114,7 +1118,8 @@ function updateHUD(){
   const t1done = trials.slice(0,currentTrial).filter(t=>t.t1Correct!==undefined&&!t.isCatch);
   if(t1done.length>0){
     const t1acc = t1done.filter(t=>t.t1Correct).length/t1done.length;
-    document.getElementById('hud-t1acc').textContent=(t1acc*100).toFixed(0)+'%';
+    const t1el = document.getElementById('hud-t1acc');
+    if(t1el) t1el.textContent=(t1acc*100).toFixed(0)+'%';
   }
   if(DEBUG_MODE) document.getElementById('hud-soa').textContent=isCatch?'catch':currentSOA_ms+'ms';
   const c=(QUEST.confidence()*100).toFixed(0);
