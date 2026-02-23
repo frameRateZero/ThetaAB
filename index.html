@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v7</title>
+<title>θ WAVE — Attentional Blink Lab v9</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -98,6 +98,28 @@
   .hud-conf-fill{height:100%;border-radius:2px;
     background:linear-gradient(90deg,var(--danger),var(--warning),var(--success));
     transition:width 0.6s ease;}
+  /* ── Settings Panel ───────────────────────────────────────────── */
+  .settings-panel{width:100%;max-width:380px;background:var(--surface);
+    border:1px solid var(--border);border-radius:16px;padding:18px 20px;
+    display:flex;flex-direction:column;gap:14px;}
+  .settings-title{font-family:var(--font-display);font-size:11px;font-weight:700;
+    letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+  .setting-row{display:flex;flex-direction:column;gap:6px;}
+  .setting-label{display:flex;justify-content:space-between;align-items:center;}
+  .setting-name{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+  .setting-val{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--theta);}
+  .setting-slider{-webkit-appearance:none;appearance:none;width:100%;height:3px;
+    border-radius:2px;background:var(--border);outline:none;cursor:pointer;}
+  .setting-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+    border-radius:50%;background:var(--theta);cursor:pointer;border:2px solid var(--bg);}
+  .setting-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+    background:var(--theta);cursor:pointer;border:2px solid var(--bg);}
+  .setting-toggle{display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+  .setting-toggle button{flex:1;padding:7px 4px;font-family:var(--font-mono);font-size:10px;
+    letter-spacing:1px;text-transform:uppercase;background:transparent;
+    border:none;color:var(--muted);cursor:pointer;transition:all 0.15s;}
+  .setting-toggle button.active{background:var(--theta-dim);color:var(--theta);}
+  .settings-divider{height:1px;background:var(--border);margin:2px 0;}
   .response-prompt{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
     display:flex;flex-direction:column;align-items:stretch;gap:0;z-index:20;
     background:rgba(8,8,15,0.92);border:1px solid var(--border);border-radius:20px;
@@ -200,7 +222,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v7</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v9</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -215,8 +237,56 @@
     <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v7 changelog:</strong> Zero ISI backward masking &middot; Low-contrast T2 (#606060) &middot; X-confusable distractor pool &middot; Smaller T1 font (harder ID) &middot; T1 Even/Odd dual task &middot; SOA 50–600ms
+    <strong>v9 changelog:</strong> Live settings panel: T2 contrast, stream speed, T1 color, T1 size, SOA max, trial count — all tunable before each session
   </div>
+  <div class="settings-panel">
+    <div class="settings-title">&#9881; Session Settings</div>
+    <div class="setting-row">
+      <div class="setting-label">
+        <span class="setting-name">T2 Contrast</span>
+        <span class="setting-val" id="lbl-t2contrast">20%</span>
+      </div>
+      <input type="range" class="setting-slider" id="sl-t2contrast" min="0" max="100" step="5" value="20" oninput="updateSettings()">
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">
+        <span class="setting-name">Stream Speed</span>
+        <span class="setting-val" id="lbl-speed">83ms/item</span>
+      </div>
+      <input type="range" class="setting-slider" id="sl-speed" min="8" max="14" step="1" value="10" oninput="updateSettings()">
+    </div>
+    <div class="setting-row">
+      <div class="setting-label"><span class="setting-name">T1 Color</span></div>
+      <div class="setting-toggle" id="tog-t1color">
+        <button onclick="setT1Color('same')" class="active">Same</button>
+        <button onclick="setT1Color('white')">White</button>
+        <button onclick="setT1Color('red')">Red</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">
+        <span class="setting-name">T1 Font Size</span>
+        <span class="setting-val" id="lbl-t1font">72px</span>
+      </div>
+      <input type="range" class="setting-slider" id="sl-t1font" min="48" max="120" step="8" value="72" oninput="updateSettings()">
+    </div>
+    <div class="settings-divider"></div>
+    <div class="setting-row">
+      <div class="setting-label">
+        <span class="setting-name">SOA Max</span>
+        <span class="setting-val" id="lbl-soamax">600ms</span>
+      </div>
+      <input type="range" class="setting-slider" id="sl-soamax" min="200" max="600" step="50" value="600" oninput="updateSettings()">
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">
+        <span class="setting-name">Trials</span>
+        <span class="setting-val" id="lbl-trials">120</span>
+      </div>
+      <input type="range" class="setting-slider" id="sl-trials" min="60" max="150" step="30" value="120" oninput="updateSettings()">
+    </div>
+  </div>
+
   <div style="display:flex;flex-direction:column;gap:10px;align-items:center;width:100%;max-width:240px;">
     <button class="btn-primary" onclick="showScreen('calibration-screen')">Begin Session</button>
     <button class="btn-secondary" onclick="showHistory()">Past Results</button>
@@ -405,7 +475,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v7 — Attentional Blink Theta Estimator
+//  θ WAVE v9 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -674,15 +744,27 @@ const QUEST = (() => {
 //  Catch trials: T1 present, no T2. False alarms tracked but not fed to QUEST.
 //  Button lights up only during response window (T2 trials only).
 // ════════════════════════════════════════════════════════════════════
-const BG_COLOR        = 'rgb(128,128,128)';
-const DIST_COLOR      = '#222222';
-const T2_COLOR        = '#606060'; // low contrast vs bg #808080 — requires attention to detect
-const T1_COLOR        = '#cc0000';
-const FIX_COLOR       = '#1a1a1a';
-const FRAMES_PER_ITEM = 12;   // ~100ms @ 120Hz, ~167ms @ 60Hz
-const STIM_FRAMES     = 12;   // = FRAMES_PER_ITEM: zero ISI, backward masking on every item
-const FONT_FACE       = 'bold 108px Arial, Helvetica, sans-serif'; // distractor font
-const T1_FONT_FACE    = 'bold 72px Arial, Helvetica, sans-serif';  // T1 smaller = harder to ID
+const BG_COLOR   = 'rgb(128,128,128)';
+const DIST_COLOR = '#222222';
+const FIX_COLOR  = '#1a1a1a';
+const FONT_FACE  = 'bold 108px Arial, Helvetica, sans-serif';
+
+// Live settings — updated by sliders, locked in by applySettings() at session start
+let CFG = {
+  t2Hex:         '#747474',
+  t1ColorMode:   'same',
+  framesPerItem: 10,
+  t1FontPx:      72,
+  soaMaxMs:      600,
+  totalTrials:   120,
+};
+
+let T2_COLOR      = CFG.t2Hex;
+let T1_COLOR      = DIST_COLOR;
+let T1_FONT_FACE  = 'bold 72px Arial, Helvetica, sans-serif';
+let FRAMES_PER_ITEM = CFG.framesPerItem;
+let STIM_FRAMES     = CFG.framesPerItem;
+let TOTAL_TRIALS    = CFG.totalTrials;
 const LETTER_POOL     = ['K','V','Y','Z','N','W','M','H','I','T','F','E','L','J','P','R','U','C'];
 // X-confusable letters dominate: K,V,Y,Z,N,W share strokes with X (X itself excluded — T2 only)
 const DIGIT_POOL      = ['0','1','2','3','4','5','6','7','8','9'];
@@ -695,7 +777,7 @@ let sessionActive = false;
 const DEBUG_MODE = location.search.includes('debug');
 let trials = [];
 let currentTrial = 0;
-const TOTAL_TRIALS = 120;
+// TOTAL_TRIALS = CFG.totalTrials (see above)
 
 let soaCandidates = [];
 let msPerFrame    = 1000 / 120;
@@ -731,7 +813,7 @@ function buildSOACandidates(mspf) {
   // Extended range captures 2nd trough (~1/f): at 3Hz that's 333ms,
   // at 7Hz it's 143ms — both now within range.
   // exp(-600/250) ≈ 0.09 so envelope is near-flat beyond 600ms.
-  const maxFrames = Math.ceil(600 / mspf);
+  const maxFrames = Math.ceil(CFG.soaMaxMs / mspf);
   const out = [];
   for (let f = 1; f <= maxFrames; f += 2) {
     out.push(Math.round(f * mspf));
@@ -750,7 +832,54 @@ function pickLetter() {
   return l;
 }
 
+// ── Settings helpers ─────────────────────────────────────────────────
+function grayToHex(g) {
+  const h = Math.max(0,Math.min(255,Math.round(g))).toString(16).padStart(2,'0');
+  return '#' + h + h + h;
+}
+
+function updateSettings() {
+  const ct = parseInt(document.getElementById('sl-t2contrast').value);
+  CFG.t2Hex = grayToHex(128 - Math.round((ct/100)*64));
+  document.getElementById('lbl-t2contrast').textContent = ct + '%';
+
+  CFG.framesPerItem = parseInt(document.getElementById('sl-speed').value);
+  const ms = Math.round(CFG.framesPerItem * (1000/120));
+  document.getElementById('lbl-speed').textContent = ms + 'ms/item';
+
+  CFG.t1FontPx = parseInt(document.getElementById('sl-t1font').value);
+  document.getElementById('lbl-t1font').textContent = CFG.t1FontPx + 'px';
+
+  CFG.soaMaxMs = parseInt(document.getElementById('sl-soamax').value);
+  document.getElementById('lbl-soamax').textContent = CFG.soaMaxMs + 'ms';
+
+  CFG.totalTrials = parseInt(document.getElementById('sl-trials').value);
+  document.getElementById('lbl-trials').textContent = CFG.totalTrials;
+}
+
+function setT1Color(mode) {
+  CFG.t1ColorMode = mode;
+  document.querySelectorAll('#tog-t1color button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#tog-t1color button')[['same','white','red'].indexOf(mode)].classList.add('active');
+}
+
+function applySettings() {
+  T2_COLOR        = CFG.t2Hex;
+  T1_COLOR        = CFG.t1ColorMode === 'red'  ? '#cc0000'
+                  : CFG.t1ColorMode === 'white' ? '#d8d8d8'
+                  : DIST_COLOR;
+  T1_FONT_FACE    = 'bold ' + CFG.t1FontPx + 'px Arial, Helvetica, sans-serif';
+  FRAMES_PER_ITEM = CFG.framesPerItem;
+  STIM_FRAMES     = CFG.framesPerItem;
+  TOTAL_TRIALS    = CFG.totalTrials;
+}
+
+function initSettings() {
+  updateSettings();
+}
+
 function startSession() {
+  applySettings();
   QUEST.reset();
   trials=[]; currentTrial=0;
   probeHits={}; probeMisses={};
@@ -881,7 +1010,7 @@ function trialLoop(timestamp) {
         if(phaseItem >= preItems) {
           phase='t1'; phaseFrame=0;
           t1Digit = DIGIT_POOL[Math.floor(Math.random()*DIGIT_POOL.length)];
-          currentItem = {char:t1Digit, color:T1_COLOR, role:'T1'};
+          currentItem = {char:t1Digit, color:DIST_COLOR, role:'T1'};
         } else {
           currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
         }
@@ -1399,6 +1528,7 @@ function clearHistory(){
 
 // ── Boot ──────────────────────────────────────────────────────────────
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+initSettings();
 
 // keydown handled by onKey(), registered in startSession()
 </script>
