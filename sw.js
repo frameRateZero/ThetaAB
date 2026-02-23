@@ -1,4 +1,4 @@
-// θ WAVE v6 — Service Worker
+// θ WAVE v6 —Service Worker
 const CACHE = 'theta-wave-v6';
 const ASSETS = [
   './',
