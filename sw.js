@@ -1,5 +1,5 @@
-// θ WAVE v7 — Service Worker
-const CACHE = 'theta-wave-v7';
+// θ WAVE v9 — Service Worker
+const CACHE = 'theta-wave-v9';
 const ASSETS = [
   './',
   './index.html',
