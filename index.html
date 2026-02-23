@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v9</title>
+<title>θ WAVE — Attentional Blink Lab v10</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -223,7 +223,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v9</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v10</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -238,7 +238,7 @@
     <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v9 changelog:</strong> Live settings panel: T2 contrast, stream speed, T1 color, T1 size, SOA max, trial count — all tunable before each session
+    <strong>v10 changelog:</strong> Settings panel (T2 contrast, speed, T1 color/size, SOA max, trials) &middot; T1 color toggle now works &middot; T1 font capped at distractor size &middot; Home screen scrollable
   </div>
   <div class="settings-panel">
     <div class="settings-title">&#9881; Session Settings</div>
@@ -269,7 +269,7 @@
         <span class="setting-name">T1 Font Size</span>
         <span class="setting-val" id="lbl-t1font">72px</span>
       </div>
-      <input type="range" class="setting-slider" id="sl-t1font" min="48" max="120" step="8" value="72" oninput="updateSettings()">
+      <input type="range" class="setting-slider" id="sl-t1font" min="48" max="108" step="8" value="72" oninput="updateSettings();">
     </div>
     <div class="settings-divider"></div>
     <div class="setting-row">
@@ -476,7 +476,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v9 — Attentional Blink Theta Estimator
+//  θ WAVE v10 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -869,7 +869,7 @@ function applySettings() {
   T1_COLOR        = CFG.t1ColorMode === 'red'  ? '#cc0000'
                   : CFG.t1ColorMode === 'white' ? '#d8d8d8'
                   : DIST_COLOR;
-  T1_FONT_FACE    = 'bold ' + CFG.t1FontPx + 'px Arial, Helvetica, sans-serif';
+  T1_FONT_FACE    = 'bold ' + Math.min(CFG.t1FontPx, 108) + 'px Arial, Helvetica, sans-serif';
   FRAMES_PER_ITEM = CFG.framesPerItem;
   STIM_FRAMES     = CFG.framesPerItem;
   TOTAL_TRIALS    = CFG.totalTrials;
@@ -1011,7 +1011,7 @@ function trialLoop(timestamp) {
         if(phaseItem >= preItems) {
           phase='t1'; phaseFrame=0;
           t1Digit = DIGIT_POOL[Math.floor(Math.random()*DIGIT_POOL.length)];
-          currentItem = {char:t1Digit, color:DIST_COLOR, role:'T1'};
+          currentItem = {char:t1Digit, color:T1_COLOR,   role:'T1'};
         } else {
           currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
         }
