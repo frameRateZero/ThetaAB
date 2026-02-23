@@ -19,7 +19,7 @@
     --font-mono:'Space Mono',monospace;--font-display:'Syne',sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100dvh;overflow:hidden;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100dvh;overflow:hidden;} /* overflow managed per-screen */
   body::before{content:'';position:fixed;inset:0;
     background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),
     linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);
@@ -34,8 +34,9 @@
   .screen.hidden{opacity:0;pointer-events:none;}
 
   /* HOME */
-  #home-screen{gap:26px;}
-  .logo-theta{font-family:var(--font-display);font-size:clamp(72px,20vw,130px);font-weight:800;
+  #home-screen{gap:18px;overflow-y:auto;justify-content:flex-start;
+    padding:44px 24px 64px;position:absolute;}
+  .logo-theta{font-family:var(--font-display);font-size:clamp(52px,15vw,96px);font-weight:800;
     color:var(--theta);line-height:0.85;letter-spacing:-4px;
     text-shadow:0 0 40px var(--theta-glow),0 0 80px rgba(0,229,255,0.2);
     animation:pulse 3s ease-in-out infinite;text-align:center;}
@@ -101,7 +102,7 @@
   /* ── Settings Panel ───────────────────────────────────────────── */
   .settings-panel{width:100%;max-width:380px;background:var(--surface);
     border:1px solid var(--border);border-radius:16px;padding:18px 20px;
-    display:flex;flex-direction:column;gap:14px;}
+    display:flex;flex-direction:column;gap:10px;}
   .settings-title{font-family:var(--font-display);font-size:11px;font-weight:700;
     letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
   .setting-row{display:flex;flex-direction:column;gap:6px;}
