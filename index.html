@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v10</title>
+<title>θ WAVE — Attentional Blink Lab v11</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -223,7 +223,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v10</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v11</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -238,7 +238,7 @@
     <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v10 changelog:</strong> Settings panel (T2 contrast, speed, T1 color/size, SOA max, trials) &middot; T1 color toggle now works &middot; T1 font capped at distractor size &middot; Home screen scrollable
+    <strong>v11 changelog:</strong> QUEST now maximises Expected Information Gain about frequency (not threshold) &middot; Trials slider min 20 for quick testing &middot; SOA coverage across full oscillation
   </div>
   <div class="settings-panel">
     <div class="settings-title">&#9881; Session Settings</div>
@@ -284,7 +284,7 @@
         <span class="setting-name">Trials</span>
         <span class="setting-val" id="lbl-trials">120</span>
       </div>
-      <input type="range" class="setting-slider" id="sl-trials" min="60" max="150" step="30" value="120" oninput="updateSettings()">
+      <input type="range" class="setting-slider" id="sl-trials" min="20" max="150" step="10" value="120" oninput="updateSettings();">
     </div>
   </div>
 
@@ -476,7 +476,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v10 — Attentional Blink Theta Estimator
+//  θ WAVE v11 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -701,12 +701,55 @@ const QUEST = (() => {
     return p;
   }
 
-  // Pick next SOA: maximise expected information (p closest to 0.5)
+  // Frequency marginal entropy H(f) from current posterior
+  function freqEntropy() {
+    const fp = freqPost(); // already normalised
+    let h = 0;
+    fp.forEach(p => { if(p > 1e-12) h -= p * Math.log(p); });
+    return h;
+  }
+
+  // Frequency marginal posterior after a hypothetical response (0 or 1)
+  function freqPostGiven(soa_ms, resp) {
+    // Compute unnormalised joint posterior weighted by likelihood of resp
+    const fp = new Float64Array(nF);
+    for (let fi=0;fi<nF;fi++) {
+      let w = 0;
+      for (let ai=0;ai<nA;ai++) for (let bi=0;bi<nB;bi++) {
+        const prior = Math.exp(logPost[idx(fi,ai,bi)]);
+        const pd    = pDet(soa_ms, fi, ai, bi);
+        w += prior * (resp ? pd : 1 - pd);
+      }
+      fp[fi] = w;
+    }
+    // Normalise
+    const tot = fp.reduce((a,b)=>a+b, 0);
+    if (tot > 0) for (let i=0;i<nF;i++) fp[i] /= tot;
+    return fp;
+  }
+
+  // Shannon entropy of a distribution
+  function entropy(dist) {
+    let h = 0;
+    dist.forEach(p => { if(p > 1e-12) h -= p * Math.log(p); });
+    return h;
+  }
+
+  // Pick next SOA: maximise Expected Information Gain about frequency
+  // EIG(soa) = H(f) - p_yes·H(f|yes) - p_no·H(f|no)
   function nextSOA(candidates) {
-    let best=candidates[0], bs=Infinity;
+    const hCurrent = freqEntropy();
+    const pPost    = freqPost();
+    let best = candidates[0], bestEIG = -Infinity;
+
     candidates.forEach(s => {
-      const sc = Math.abs(predictP(s) - 0.5);
-      if (sc < bs) { bs=sc; best=s; }
+      const pYes = predictP(s);
+      const pNo  = 1 - pYes;
+      // Expected posterior entropy after observing yes or no
+      const hYes = entropy(freqPostGiven(s, 1));
+      const hNo  = entropy(freqPostGiven(s, 0));
+      const eig  = hCurrent - (pYes * hYes + pNo * hNo);
+      if (eig > bestEIG) { bestEIG = eig; best = s; }
     });
     return best;
   }
