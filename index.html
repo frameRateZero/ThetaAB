@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v4</title>
+<title>θ WAVE — Attentional Blink Lab v5</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -98,19 +98,25 @@
   .hud-conf-fill{height:100%;border-radius:2px;
     background:linear-gradient(90deg,var(--danger),var(--warning),var(--success));
     transition:width 0.6s ease;}
-  .response-prompt{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);
-    display:flex;flex-direction:column;align-items:center;gap:14px;z-index:20;}
-  .response-question{font-family:var(--font-display);font-size:13px;font-weight:700;
-    letter-spacing:3px;text-transform:uppercase;color:var(--muted);text-align:center;}
-  .response-btns{display:flex;gap:16px;}
-  .resp-yes,.resp-no{width:120px;height:64px;border-radius:12px;border:2px solid;
-    font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:2px;
+  .response-prompt{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:row;align-items:flex-start;gap:24px;z-index:20;
+    background:rgba(8,8,15,0.92);border:1px solid var(--border);border-radius:20px;
+    padding:20px 24px;backdrop-filter:blur(12px);}
+  .response-block{display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .response-divider{width:1px;background:var(--border);align-self:stretch;margin:4px 0;}
+  .response-question{font-family:var(--font-display);font-size:10px;font-weight:700;
+    letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);text-align:center;}
+  .response-btns{display:flex;gap:10px;}
+  .resp-yes,.resp-no,.resp-even,.resp-odd{width:90px;height:52px;border-radius:10px;border:2px solid;
+    font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:1.5px;
     text-transform:uppercase;cursor:pointer;transition:all 0.1s;
-    touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;}
-  .resp-yes{background:rgba(57,255,138,0.08);border-color:rgba(57,255,138,0.35);color:var(--success);}
-  .resp-yes:active{background:rgba(57,255,138,0.18);transform:scale(0.95);}
-  .resp-no{background:rgba(255,60,90,0.08);border-color:rgba(255,60,90,0.35);color:var(--danger);}
-  .resp-no:active{background:rgba(255,60,90,0.18);transform:scale(0.95);}
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;
+    opacity:1;}
+  .resp-yes,.resp-even{background:rgba(57,255,138,0.08);border-color:rgba(57,255,138,0.35);color:var(--success);}
+  .resp-yes:active,.resp-even:active{background:rgba(57,255,138,0.20);transform:scale(0.95);}
+  .resp-no,.resp-odd{background:rgba(255,60,90,0.08);border-color:rgba(255,60,90,0.35);color:var(--danger);}
+  .resp-no:active,.resp-odd:active{background:rgba(255,60,90,0.20);transform:scale(0.95);}
+  .resp-btn-selected{opacity:0.45;pointer-events:none;}
 
   /* RESULTS */
   #results-screen{gap:18px;overflow-y:auto;padding:44px 24px 64px;justify-content:flex-start;}
@@ -194,7 +200,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v4</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v5</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -206,10 +212,10 @@
   </div>
   <div class="info-card">
     <h3>What this measures</h3>
-    <p>Rapid gray letters flash on screen. A salient <span style="color:var(--danger)">red O</span> hijacks your attention automatically via the LC-NE system. Your only task: answer <strong style="color:var(--text)">Yes</strong> or <strong style="color:var(--danger)">No</strong> when asked if you saw an X &mdash; the same gray as all other letters. The lag between O and X probes your attentional recovery curve, fit by a phase-reset damped sine model (τ=250ms) that directly estimates theta frequency and all three AB landmarks: lag-1 sparing, trough, and recovery.</p>
+    <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v4 changelog:</strong> SOA range 50–600ms (captures 2nd trough) &middot; τ=250ms damping &middot; 70/30 hybrid sampling (QUEST + uniform) &middot; Forced-choice Yes/No response &middot; Damped sine likelihood (phase-reset at T1) &middot; CSV export
+    <strong>v5 changelog:</strong> T1 is now a red digit (Even/Odd task) &middot; T2 data discarded if T1 wrong &middot; SOA 50–600ms &middot; τ=250ms &middot; 70/30 hybrid sampling &middot; Damped sine likelihood
   </div>
   <div style="display:flex;flex-direction:column;gap:10px;align-items:center;width:100%;max-width:240px;">
     <button class="btn-primary" onclick="showScreen('calibration-screen')">Begin Session</button>
@@ -306,10 +312,20 @@
     </div>
   </div>
   <div class="response-prompt" id="response-prompt" style="display:none;">
-    <div class="response-question">Did you see the X?</div>
-    <div class="response-btns">
-      <button class="resp-yes" id="resp-yes" onpointerdown="registerResponse(true)">Yes</button>
-      <button class="resp-no"  id="resp-no"  onpointerdown="registerResponse(false)">No</button>
+    <div class="response-block">
+      <div class="response-question">Was the number Even or Odd?</div>
+      <div class="response-btns">
+        <button class="resp-even" onpointerdown="answerT1('even')">Even</button>
+        <button class="resp-odd"  onpointerdown="answerT1('odd')">Odd</button>
+      </div>
+    </div>
+    <div class="response-divider"></div>
+    <div class="response-block">
+      <div class="response-question">Did you see the X?</div>
+      <div class="response-btns">
+        <button class="resp-yes" id="resp-yes" onpointerdown="answerT2(true)">Yes</button>
+        <button class="resp-no"  id="resp-no"  onpointerdown="answerT2(false)">No</button>
+      </div>
     </div>
   </div>
 </div>
@@ -385,7 +401,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v4 — Attentional Blink Theta Estimator
+//  θ WAVE v5 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -662,6 +678,8 @@ const FRAMES_PER_ITEM = 12;   // ~100ms @ 120Hz, ~167ms @ 60Hz
 const STIM_FRAMES     = 11;   // letter visible frames within each item slot
 const FONT_FACE       = 'bold 108px Arial, Helvetica, sans-serif';
 const LETTER_POOL     = ['A','B','C','D','E','F','G','H','J','K','L','M','N','P','R','T','U','V','W','Y'];
+const DIGIT_POOL      = ['0','1','2','3','4','5','6','7','8','9'];
+const EVEN_DIGITS     = new Set(['0','2','4','6','8']);
 const CATCH_RATE      = 0.25; // fraction of trials with no T2 (~25% keeps participant honest)
 const RUNOUT_ITEMS    = 5;    // distractor items always shown after T2/catch position
 
@@ -690,6 +708,9 @@ let preItems      = 0;  // number of pre-T1 items this trial
 let runoutTarget  = 0;  // total runout items this trial
 let isCatch       = false;
 let responseReceived = false; // set by Yes/No button after stream ends
+let t1Digit       = '';   // digit shown as T1 this trial
+let t1Correct     = false; // true if participant correctly identified Even/Odd
+let t1Discarded   = 0;    // running count of T1-failed trials (not fed to QUEST)
 let falseAlarms      = 0;
 
 // Letter state for current item
@@ -727,6 +748,7 @@ function startSession() {
   trials=[]; currentTrial=0;
   probeHits={}; probeMisses={};
   falseAlarms=0;
+  t1Discarded=0;
   msPerFrame = 1000 / (measuredFPS||120);
   soaCandidates = buildSOACandidates(msPerFrame);
 
@@ -812,6 +834,8 @@ function startTrial() {
   preItems        = 4 + Math.floor(Math.random()*5); // 4–8 pre-T1 items
   runoutTarget    = RUNOUT_ITEMS;
   responseReceived = false;
+  t1Digit           = '';
+  t1Correct         = false;
   recentLetters.length = 0; // fresh pool each trial
 
   // Enter fixation phase
@@ -849,7 +873,8 @@ function trialLoop(timestamp) {
         phaseFrame=0; phaseItem++;
         if(phaseItem >= preItems) {
           phase='t1'; phaseFrame=0;
-          currentItem = {char:pickLetter(), color:T1_COLOR, role:'T1'};
+          t1Digit = DIGIT_POOL[Math.floor(Math.random()*DIGIT_POOL.length)];
+          currentItem = {char:t1Digit, color:T1_COLOR, role:'T1'};
         } else {
           currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
         }
@@ -982,17 +1007,47 @@ function drawFixation(){
   ctx.beginPath(); ctx.moveTo(cx,cy-s); ctx.lineTo(cx,cy+s); ctx.stroke();
 }
 
+// Per-trial answer state — both must be set before finishTrial fires
+let _t1Answer  = null; // 'even' | 'odd' | null
+let _t2Answer  = null; // true | false | null
+
 function showResponsePrompt() {
   if(animFrame) { cancelAnimationFrame(animFrame); animFrame=null; }
-  drawBg(); // clear canvas to gray
+  _t1Answer = null; _t2Answer = null;
+  // Reset button opacity
+  document.querySelectorAll('.resp-even,.resp-odd,.resp-yes,.resp-no')
+    .forEach(b => b.classList.remove('resp-btn-selected'));
+  drawBg();
   document.getElementById('response-prompt').style.display = 'flex';
 }
 
-function registerResponse(detected) {
-  if(!sessionActive) return;
-  document.getElementById('response-prompt').style.display = 'none';
+function answerT1(evenOdd) {
+  if(_t1Answer !== null) return; // already answered
+  _t1Answer = evenOdd;
+  // Dim the unchosen button
+  const chosen = evenOdd === 'even' ? '.resp-even' : '.resp-odd';
+  const other  = evenOdd === 'even' ? '.resp-odd'  : '.resp-even';
+  document.querySelector(other).classList.add('resp-btn-selected');
   playBeep();
-  responseReceived = detected;
+  if(_t2Answer !== null) _submitAnswers();
+}
+
+function answerT2(detected) {
+  if(_t2Answer !== null) return; // already answered
+  _t2Answer = detected;
+  const chosen = detected ? '.resp-yes' : '.resp-no';
+  const other  = detected ? '.resp-no'  : '.resp-yes';
+  document.querySelector(other).classList.add('resp-btn-selected');
+  playBeep();
+  if(_t1Answer !== null) _submitAnswers();
+}
+
+function _submitAnswers() {
+  document.getElementById('response-prompt').style.display = 'none';
+  // Evaluate T1 accuracy
+  const isEven = EVEN_DIGITS.has(t1Digit);
+  t1Correct    = (_t1Answer === 'even') === isEven;
+  responseReceived = _t2Answer;
   finishTrial();
 }
 
@@ -1015,11 +1070,6 @@ function playBeep(){
 }
 
 function onKey(e){
-  // Space/Enter answer Yes when prompt is visible
-  if((e.code==='Space'||e.code==='Enter') &&
-      document.getElementById('response-prompt').style.display !== 'none'){
-    e.preventDefault(); registerResponse(true);
-  }
   if(e.code==='Escape'&&sessionActive){
     sessionActive=false; cancelAnimationFrame(animFrame); showScreen('home-screen');
   }
@@ -1028,18 +1078,28 @@ function onKey(e){
 function finishTrial(){
   if(!sessionActive) return;
   const detected = responseReceived; // set by Yes/No button
-  trials[currentTrial].detected = detected;
+  trials[currentTrial].detected   = detected;
+  trials[currentTrial].t1Digit   = t1Digit;
+  trials[currentTrial].t1Correct = t1Correct;
 
   if(isCatch){
-    if(detected) falseAlarms++;
+    // Catch trials: T1 still present, evaluate Even/Odd, but no T2 to detect
+    // Yes response on catch = false alarm (only when T1 was correctly processed)
+    if(t1Correct && detected) falseAlarms++;
   } else {
-    const soa = currentSOA_ms;
-    if(!probeHits[soa]){probeHits[soa]=0; probeMisses[soa]=0;}
-    if(detected) probeHits[soa]++; else probeMisses[soa]++;
-    QUEST.update(detected?1:0, soa);
-    const ni = currentTrial+1;
-    if(ni<TOTAL_TRIALS && trials[ni] && !trials[ni].isCatch && trials[ni].soa_ms===null)
-      trials[ni].soa_ms = QUEST.nextSOA(soaCandidates);
+    if(!t1Correct) {
+      // T1 missed or wrong — discard T2 data, don't feed QUEST
+      t1Discarded++;
+    } else {
+      // T1 correct — T2 detection is valid, feed QUEST
+      const soa = currentSOA_ms;
+      if(!probeHits[soa]){probeHits[soa]=0; probeMisses[soa]=0;}
+      if(detected) probeHits[soa]++; else probeMisses[soa]++;
+      QUEST.update(detected?1:0, soa);
+      const ni = currentTrial+1;
+      if(ni<TOTAL_TRIALS && trials[ni] && !trials[ni].isCatch && trials[ni].soa_ms===null)
+        trials[ni].soa_ms = QUEST.nextSOA(soaCandidates);
+    }
   }
 
   currentTrial++;
@@ -1051,6 +1111,11 @@ function finishTrial(){
 
 function updateHUD(){
   document.getElementById('hud-trial').textContent=`${currentTrial} / ${TOTAL_TRIALS}`;
+  const t1done = trials.slice(0,currentTrial).filter(t=>t.t1Correct!==undefined&&!t.isCatch);
+  if(t1done.length>0){
+    const t1acc = t1done.filter(t=>t.t1Correct).length/t1done.length;
+    document.getElementById('hud-t1acc').textContent=(t1acc*100).toFixed(0)+'%';
+  }
   if(DEBUG_MODE) document.getElementById('hud-soa').textContent=isCatch?'catch':currentSOA_ms+'ms';
   const c=(QUEST.confidence()*100).toFixed(0);
   document.getElementById('hud-conf').style.width=c+'%';
@@ -1256,10 +1321,11 @@ function drawFreqChart(){
 
 // ── CSV Export ────────────────────────────────────────────────────────
 function downloadCSV(){
-  let csv='Trial,Type,SOA_ms,Detected\n';
+  let csv='Trial,Type,SOA_ms,T1_Digit,T1_Correct,T2_Detected,T2_Valid\n';
   trials.forEach((t,i)=>{
     if(t.detected===null) return;
-    csv+=`${i+1},${t.isCatch?'catch':'probe'},${t.isCatch?'':t.soa_ms??''},${t.detected?1:0}\n`;
+    const t2valid = !t.isCatch && t.t1Correct ? 1 : (t.isCatch ? '' : 0);
+    csv+=`${i+1},${t.isCatch?'catch':'probe'},${t.isCatch?'':t.soa_ms??''},${t.t1Digit??''},${t.t1Correct?1:0},${t.detected?1:0},${t2valid}\n`;
   });
   csv+=`\nSummary\n`;
   csv+=`Model,Damped Sine (tau=250ms)\n`;
@@ -1270,6 +1336,9 @@ function downloadCSV(){
   csv+=`Base_mean,${QUEST.meanBase().toFixed(4)}\n`;
   csv+=`Confidence_pct,${(QUEST.confidence()*100).toFixed(2)}\n`;
   csv+=`Catch_trials,${trials.filter(t=>t.isCatch&&t.detected!==null).length}\n`;
+  csv+=`T1_discarded,${t1Discarded}\n`;
+  const t1answ=trials.filter(t=>!t.isCatch&&t.t1Correct!==undefined);
+  csv+=`T1_accuracy,${t1answ.length?((t1answ.filter(t=>t.t1Correct).length/t1answ.length)*100).toFixed(1)+'%':'—'}\n`;
   csv+=`False_alarms,${falseAlarms}\n`;
 
   const blob=new Blob([csv],{type:'text/csv'});
