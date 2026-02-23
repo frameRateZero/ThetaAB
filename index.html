@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<title>θ WAVE — Attentional Blink Lab v4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#08080f;--surface:#0f0f1a;--border:#1e1e30;
+    --theta:#00e5ff;--theta-dim:rgba(0,229,255,0.12);--theta-glow:rgba(0,229,255,0.4);
+    --danger:#ff3c5a;--danger-dim:rgba(255,60,90,0.2);
+    --text:#e8e8f0;--muted:#5a5a7a;--success:#39ff8a;--warning:#ffcc00;--amber:#ff9d00;
+    --font-mono:'Space Mono',monospace;--font-display:'Syne',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100dvh;overflow:hidden;}
+  body::before{content:'';position:fixed;inset:0;
+    background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);
+    background-size:40px 40px;pointer-events:none;z-index:0;}
+  body::after{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:600px;height:600px;
+    background:radial-gradient(ellipse,rgba(0,229,255,0.04) 0%,transparent 70%);
+    pointer-events:none;z-index:0;}
+
+  .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;z-index:10;transition:opacity 0.35s ease;padding:24px;}
+  .screen.hidden{opacity:0;pointer-events:none;}
+
+  /* HOME */
+  #home-screen{gap:26px;}
+  .logo-theta{font-family:var(--font-display);font-size:clamp(72px,20vw,130px);font-weight:800;
+    color:var(--theta);line-height:0.85;letter-spacing:-4px;
+    text-shadow:0 0 40px var(--theta-glow),0 0 80px rgba(0,229,255,0.2);
+    animation:pulse 3s ease-in-out infinite;text-align:center;}
+  @keyframes pulse{0%,100%{text-shadow:0 0 40px var(--theta-glow),0 0 80px rgba(0,229,255,0.2);}
+    50%{text-shadow:0 0 60px var(--theta-glow),0 0 130px rgba(0,229,255,0.3);}}
+  .logo-sub{font-family:var(--font-display);font-size:clamp(10px,2.5vw,13px);
+    font-weight:400;letter-spacing:5px;text-transform:uppercase;color:var(--muted);
+    margin-top:8px;text-align:center;}
+  .badge-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;}
+  .badge{background:var(--theta-dim);border:1px solid rgba(0,229,255,0.2);border-radius:20px;
+    padding:4px 12px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--theta);}
+  .info-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px 20px;max-width:420px;width:100%;}
+  .info-card h3{font-family:var(--font-display);font-size:10px;letter-spacing:4px;
+    text-transform:uppercase;color:var(--theta);margin-bottom:9px;}
+  .info-card p{font-size:12px;line-height:1.75;color:var(--muted);}
+  .changelog{max-width:420px;width:100%;background:rgba(255,157,0,0.07);
+    border:1px solid rgba(255,157,0,0.22);border-radius:10px;padding:12px 16px;
+    font-size:11px;color:var(--amber);line-height:1.75;}
+  .changelog strong{color:var(--warning);}
+
+  /* BUTTONS */
+  .btn-primary{background:var(--theta);color:var(--bg);border:none;border-radius:8px;
+    padding:14px 42px;font-family:var(--font-display);font-size:15px;font-weight:700;
+    letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;
+    box-shadow:0 0 28px var(--theta-glow);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 48px var(--theta-glow);}
+  .btn-primary:active{transform:translateY(0);}
+  .btn-secondary{background:transparent;color:var(--muted);border:1px solid var(--border);
+    border-radius:8px;padding:9px 20px;font-family:var(--font-mono);font-size:12px;
+    letter-spacing:1px;cursor:pointer;transition:all 0.2s;}
+  .btn-secondary:hover{border-color:var(--theta);color:var(--theta);}
+  .btn-row{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;}
+
+  /* CALIBRATION */
+  #calibration-screen{gap:22px;}
+  .screen-title{font-family:var(--font-display);font-size:clamp(20px,5vw,26px);
+    font-weight:800;letter-spacing:1px;}
+  .screen-sub{font-size:10px;letter-spacing:3px;text-transform:uppercase;
+    color:var(--muted);text-align:center;}
+  .calib-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:26px;max-width:420px;width:100%;display:flex;flex-direction:column;gap:18px;}
+  .calib-item{display:flex;flex-direction:column;gap:6px;}
+  .calib-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);}
+  .calib-value{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--theta);}
+  .calib-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .calib-fill{height:100%;background:var(--theta);border-radius:2px;
+    transition:width 0.3s;box-shadow:0 0 8px var(--theta);}
+
+  /* TASK */
+  #task-screen{background:var(--bg);padding:0;}
+  #task-canvas{position:absolute;inset:0;width:100%;height:100%;cursor:none;}
+  .task-hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;
+    align-items:center;padding:13px 20px;z-index:20;
+    background:linear-gradient(to bottom,rgba(8,8,15,0.92),transparent);pointer-events:none;}
+  .hud-item{display:flex;flex-direction:column;gap:2px;}
+  .hud-label{font-size:7px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);}
+  .hud-val{font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--theta);}
+  .hud-conf-bar{width:72px;height:3px;background:var(--border);border-radius:2px;margin-top:3px;}
+  .hud-conf-fill{height:100%;border-radius:2px;
+    background:linear-gradient(90deg,var(--danger),var(--warning),var(--success));
+    transition:width 0.6s ease;}
+  .response-prompt{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:14px;z-index:20;}
+  .response-question{font-family:var(--font-display);font-size:13px;font-weight:700;
+    letter-spacing:3px;text-transform:uppercase;color:var(--muted);text-align:center;}
+  .response-btns{display:flex;gap:16px;}
+  .resp-yes,.resp-no{width:120px;height:64px;border-radius:12px;border:2px solid;
+    font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:2px;
+    text-transform:uppercase;cursor:pointer;transition:all 0.1s;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;}
+  .resp-yes{background:rgba(57,255,138,0.08);border-color:rgba(57,255,138,0.35);color:var(--success);}
+  .resp-yes:active{background:rgba(57,255,138,0.18);transform:scale(0.95);}
+  .resp-no{background:rgba(255,60,90,0.08);border-color:rgba(255,60,90,0.35);color:var(--danger);}
+  .resp-no:active{background:rgba(255,60,90,0.18);transform:scale(0.95);}
+
+  /* RESULTS */
+  #results-screen{gap:18px;overflow-y:auto;padding:44px 24px 64px;justify-content:flex-start;}
+  .result-header{text-align:center;width:100%;padding-top:10px;}
+  .theta-estimate{font-family:var(--font-display);font-size:clamp(52px,14vw,88px);
+    font-weight:800;color:var(--theta);line-height:1;text-shadow:0 0 40px var(--theta-glow);}
+  .theta-unit{font-family:var(--font-display);font-size:clamp(14px,3vw,20px);color:var(--muted);}
+  .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:480px;width:100%;}
+  .result-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;}
+  .result-card.full{grid-column:1/-1;}
+  .result-card-label{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .result-card-val{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);}
+  .confidence-block{max-width:480px;width:100%;background:var(--surface);
+    border:1px solid var(--border);border-radius:10px;padding:14px 16px;
+    display:flex;flex-direction:column;gap:9px;}
+  .conf-bar-outer{height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+  .conf-bar-inner{height:100%;border-radius:4px;
+    background:linear-gradient(90deg,var(--danger) 0%,var(--warning) 50%,var(--success) 100%);
+    transition:width 0.8s ease;}
+  .conf-labels{display:flex;justify-content:space-between;
+    font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+  .blink-zone{background:var(--danger-dim);border:1px solid rgba(255,60,90,0.28);
+    border-radius:10px;padding:14px 17px;max-width:480px;width:100%;}
+  .blink-zone-label{font-size:8px;letter-spacing:3px;text-transform:uppercase;
+    color:var(--danger);margin-bottom:6px;}
+  .blink-zone-text{font-size:12px;color:var(--text);line-height:1.75;}
+
+  /* INSTRUCTIONS */
+  #instructions-overlay{position:fixed;inset:0;background:rgba(8,8,15,0.96);z-index:50;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:22px;padding:28px;}
+  #instructions-overlay.hidden{display:none;}
+  .instr-block{max-width:380px;width:100%;background:var(--surface);
+    border:1px solid var(--border);border-radius:12px;padding:22px;
+    display:flex;flex-direction:column;gap:16px;}
+  .instr-row{display:flex;align-items:center;gap:14px;}
+  .instr-symbol{width:46px;height:46px;border-radius:8px;display:flex;
+    align-items:center;justify-content:center;font-size:22px;font-weight:700;
+    flex-shrink:0;font-family:var(--font-mono);}
+  .sym-ignore{background:var(--danger-dim);color:var(--danger);}
+  .sym-target{background:rgba(90,90,122,0.22);color:#c0c0dc;}
+  .sym-distract{background:rgba(90,90,122,0.1);color:var(--muted);}
+  .instr-desc{font-size:12px;line-height:1.75;color:var(--muted);}
+  .instr-desc strong{color:var(--text);}
+  .instr-note{max-width:380px;width:100%;background:rgba(255,157,0,0.07);
+    border:1px solid rgba(255,157,0,0.2);border-radius:9px;padding:12px 16px;
+    font-size:11px;color:var(--amber);line-height:1.7;}
+
+  /* COUNTDOWN */
+  #countdown-overlay{position:fixed;inset:0;background:var(--bg);z-index:40;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+  #countdown-overlay.hidden{display:none;}
+  .countdown-num{font-family:var(--font-display);font-size:120px;font-weight:800;color:var(--theta);
+    text-shadow:0 0 60px var(--theta-glow);animation:countAnim 1s ease-in-out forwards;}
+  @keyframes countAnim{0%{transform:scale(1.4);opacity:0;}40%{transform:scale(1);opacity:1;}
+    80%{transform:scale(1);opacity:1;}100%{transform:scale(0.8);opacity:0;}}
+  .countdown-label{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--muted);}
+
+  /* HISTORY */
+  #history-screen{gap:18px;overflow-y:auto;padding:44px 24px 64px;justify-content:flex-start;}
+  .history-list{width:100%;max-width:480px;display:flex;flex-direction:column;gap:8px;}
+  .history-entry{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:13px 16px;display:flex;justify-content:space-between;align-items:center;}
+  .history-hz{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--theta);}
+  .history-conf{font-size:9px;color:var(--muted);margin-top:3px;line-height:1.6;}
+  .history-meta{font-size:9px;color:var(--muted);text-align:right;line-height:1.9;}
+  .divider{width:100%;max-width:480px;height:1px;background:var(--border);}
+
+  /* TOAST */
+  #toast{position:fixed;top:22px;left:50%;transform:translateX(-50%);
+    background:var(--surface);border:1px solid var(--theta);border-radius:8px;
+    padding:9px 20px;font-size:11px;color:var(--theta);z-index:100;
+    transition:opacity 0.3s;white-space:nowrap;}
+  #toast.hidden{opacity:0;pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="toast" class="hidden"></div>
+
+<!-- ══ HOME ══════════════════════════════════════════════════════════ -->
+<div id="home-screen" class="screen">
+  <div>
+    <div class="logo-theta">θ</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v4</div>
+  </div>
+  <div class="badge-row">
+    <span class="badge">RSVP 120Hz</span>
+    <span class="badge">Bayesian Adaptive</span>
+    <span class="badge">Damped Sine</span>
+    <span class="badge">ISI Blanks</span>
+    <span class="badge">Entropy Confidence</span>
+    <span class="badge">CSV Export</span>
+  </div>
+  <div class="info-card">
+    <h3>What this measures</h3>
+    <p>Rapid gray letters flash on screen. A salient <span style="color:var(--danger)">red O</span> hijacks your attention automatically via the LC-NE system. Your only task: answer <strong style="color:var(--text)">Yes</strong> or <strong style="color:var(--danger)">No</strong> when asked if you saw an X &mdash; the same gray as all other letters. The lag between O and X probes your attentional recovery curve, fit by a phase-reset damped sine model (τ=250ms) that directly estimates theta frequency and all three AB landmarks: lag-1 sparing, trough, and recovery.</p>
+  </div>
+  <div class="changelog">
+    <strong>v4 changelog:</strong> SOA range 50–600ms (captures 2nd trough) &middot; τ=250ms damping &middot; 70/30 hybrid sampling (QUEST + uniform) &middot; Forced-choice Yes/No response &middot; Damped sine likelihood (phase-reset at T1) &middot; CSV export
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;align-items:center;width:100%;max-width:240px;">
+    <button class="btn-primary" onclick="showScreen('calibration-screen')">Begin Session</button>
+    <button class="btn-secondary" onclick="showHistory()">Past Results</button>
+    <button class="btn-secondary" onclick="document.getElementById('instructions-overlay').classList.remove('hidden')">Instructions</button>
+  </div>
+</div>
+
+<!-- ══ INSTRUCTIONS ══════════════════════════════════════════════════ -->
+<div id="instructions-overlay" class="hidden">
+  <div style="text-align:center;">
+    <div class="screen-title">Instructions</div>
+    <div class="screen-sub" style="margin-top:6px;">Read carefully</div>
+  </div>
+  <div class="instr-block">
+    <div class="instr-row">
+      <div class="instr-symbol sym-distract">G</div>
+      <div class="instr-desc"><strong>Gray letters</strong> flash rapidly one at a time. Ignore them completely. Keep your eyes on the center.</div>
+    </div>
+    <div class="instr-row">
+      <div class="instr-symbol sym-ignore" style="font-size:18px;">O</div>
+      <div class="instr-desc"><strong style="color:var(--danger)">Red O</strong> appears occasionally. Your brain grabs it automatically — you don't need to do anything.</div>
+    </div>
+    <div class="instr-row">
+      <div class="instr-symbol sym-target">X</div>
+      <div class="instr-desc"><strong>Gray X</strong> is your only target. After each trial, answer Yes or No — did you see it? It is the <em>same color</em> as all other letters. Identify it by shape.</div>
+    </div>
+  </div>
+  <div class="instr-note">
+    <strong>Why gray X?</strong> A colored X would "pop out" visually and bypass the attentional bottleneck we're trying to measure. A gray X forces your brain to use temporal shape discrimination — the process governed by the theta rhythm.
+  </div>
+  <div style="max-width:380px;width:100%;font-size:11px;color:var(--muted);text-align:center;line-height:1.9;">
+    Sit still. Eyes on the center cross at all times.<br>
+    120 trials · 4–6 minutes · Yes/No after each trial.
+  </div>
+  <button class="btn-primary" onclick="document.getElementById('instructions-overlay').classList.add('hidden');showScreen('calibration-screen')">Got it — continue</button>
+</div>
+
+<!-- ══ COUNTDOWN ══════════════════════════════════════════════════════ -->
+<div id="countdown-overlay" class="hidden">
+  <div class="countdown-num" id="countdown-num">3</div>
+  <div class="countdown-label">Focus on the center cross</div>
+</div>
+
+<!-- ══ CALIBRATION ════════════════════════════════════════════════════ -->
+<div id="calibration-screen" class="screen hidden">
+  <div class="screen-title">Device Check</div>
+  <div class="screen-sub">Verifying timing precision</div>
+  <div class="calib-box">
+    <div class="calib-item">
+      <div class="calib-label">Display Refresh Rate</div>
+      <div class="calib-value" id="calib-hz">—</div>
+      <div class="calib-bar"><div class="calib-fill" id="calib-hz-bar" style="width:0%"></div></div>
+    </div>
+    <div class="calib-item">
+      <div class="calib-label">Frame Consistency (σ)</div>
+      <div class="calib-value" id="calib-jitter">—</div>
+      <div class="calib-bar"><div class="calib-fill" id="calib-jitter-bar" style="width:0%"></div></div>
+    </div>
+    <div class="calib-item">
+      <div class="calib-label">ISI Blank Between Items</div>
+      <div class="calib-value" id="calib-isi" style="font-size:16px;color:var(--text)">2 frames</div>
+    </div>
+    <div class="calib-item">
+      <div class="calib-label">T2 Rendering</div>
+      <div class="calib-value" style="font-size:14px;color:var(--text)">Gray X (temporal discrimination)</div>
+    </div>
+    <div class="calib-item">
+      <div class="calib-label">Status</div>
+      <div class="calib-value" id="calib-status" style="font-size:14px;color:var(--muted)">Measuring...</div>
+    </div>
+  </div>
+  <div id="calib-btns" style="display:flex;flex-direction:column;gap:10px;align-items:center;width:100%;max-width:240px;opacity:0;transition:opacity 0.4s;">
+    <button class="btn-primary" onclick="startSession()">Start Task</button>
+    <button class="btn-secondary" onclick="showScreen('home-screen')">Back</button>
+  </div>
+</div>
+
+<!-- ══ TASK ═══════════════════════════════════════════════════════════ -->
+<div id="task-screen" class="screen hidden" style="padding:0;">
+  <canvas id="task-canvas"></canvas>
+  <div class="task-hud">
+    <div class="hud-item">
+      <div class="hud-label">Trial</div>
+      <div class="hud-val" style="color:var(--text)" id="hud-trial">0 / 120</div>
+    </div>
+    <div class="hud-item" id="hud-soa-item" style="align-items:center;visibility:hidden;">
+      <div class="hud-label">T1&rarr;T2 SOA</div>
+      <div class="hud-val" id="hud-soa">—</div>
+    </div>
+    <div class="hud-item" style="align-items:flex-end;">
+      <div class="hud-label">Confidence</div>
+      <div class="hud-conf-bar"><div class="hud-conf-fill" id="hud-conf" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="response-prompt" id="response-prompt" style="display:none;">
+    <div class="response-question">Did you see the X?</div>
+    <div class="response-btns">
+      <button class="resp-yes" id="resp-yes" onpointerdown="registerResponse(true)">Yes</button>
+      <button class="resp-no"  id="resp-no"  onpointerdown="registerResponse(false)">No</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULTS ════════════════════════════════════════════════════════ -->
+<div id="results-screen" class="screen hidden">
+  <div class="result-header">
+    <div class="screen-sub">Theta Estimate</div>
+    <div class="theta-estimate" id="res-hz">—</div>
+    <div class="theta-unit" id="res-unit">Hz</div>
+  </div>
+
+  <div class="confidence-block">
+    <div class="result-card-label" style="margin-bottom:0;">Model Confidence — Shannon Entropy of Posterior</div>
+    <div class="conf-bar-outer"><div class="conf-bar-inner" id="conf-bar" style="width:0%"></div></div>
+    <div class="conf-labels"><span>Uncertain</span><span id="conf-label">—</span><span>Confident</span></div>
+  </div>
+
+  <div class="result-grid">
+    <div class="result-card">
+      <div class="result-card-label">Period</div>
+      <div class="result-card-val" id="res-period">—</div>
+    </div>
+    <div class="result-card">
+      <div class="result-card-label">Blink Depth</div>
+      <div class="result-card-val" id="res-depth">—</div>
+    </div>
+    <div class="result-card">
+      <div class="result-card-label">Est. Baseline (prior)</div>
+      <div class="result-card-val" id="res-baseline">—</div>
+    </div>
+    <div class="result-card">
+      <div class="result-card-label">Recovery τ</div>
+      <div class="result-card-val" id="res-tau">—</div>
+    </div>
+    <div class="result-card full">
+      <div class="result-card-label">Detection Rate vs SOA — empirical data + posterior model curve</div>
+      <canvas id="soa-chart" style="width:100%;height:170px;border-radius:6px;margin-top:8px;"></canvas>
+    </div>
+    <div class="result-card full">
+      <div class="result-card-label">Posterior Probability Distribution over Theta Frequency</div>
+      <canvas id="freq-chart" style="width:100%;height:100px;border-radius:6px;margin-top:8px;"></canvas>
+    </div>
+  </div>
+
+  <div class="blink-zone">
+    <div class="blink-zone-label">Attentional Blink — Interpretation</div>
+    <div class="blink-zone-text" id="blink-interp">—</div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-primary" onclick="startSession()">Run Again</button>
+    <button class="btn-secondary" onclick="downloadCSV()">↓ Export CSV</button>
+    <button class="btn-secondary" onclick="showHistory()">History</button>
+    <button class="btn-secondary" onclick="showScreen('home-screen')">Home</button>
+  </div>
+  <div style="height:40px;"></div>
+</div>
+
+<!-- ══ HISTORY ════════════════════════════════════════════════════════ -->
+<div id="history-screen" class="screen hidden">
+  <div class="screen-title" style="padding-top:20px;">Session History</div>
+  <div class="screen-sub">Your theta fingerprint over time</div>
+  <div class="divider"></div>
+  <div class="history-list" id="history-list"></div>
+  <div class="btn-row">
+    <button class="btn-secondary" onclick="showScreen('home-screen')">Back</button>
+    <button class="btn-secondary" onclick="clearHistory()">Clear All</button>
+  </div>
+  <div style="height:40px;"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<script>
+// ════════════════════════════════════════════════════════════════════
+//  θ WAVE v4 — Attentional Blink Theta Estimator
+//
+//  Five psychophysics refinements applied:
+//
+//  1. T2 COLOR FIX (Feature vs Temporal bottleneck):
+//     T2 "X" is now the same gray as distractors. Prevents pop-out
+//     via V1 feature detection, forcing temporal shape discrimination
+//     through the Stage-2 attentional bottleneck we actually want.
+//
+//  2. ISI BLANK FRAMES (Visual masking vs attention):
+//     A 2-frame blank screen between every RSVP item creates a clear
+//     onset/offset. Without this, items smear together and detection
+//     impairment may reflect visual masking rather than the AB.
+//
+//  3. DAMPED SINE LIKELIHOOD (One-shot blink model):
+//     P(detect | SOA, f, τ, A, b) =
+//       b − A · sin(2π·f·SOA/1000) · exp(−SOA/τ)
+//     The exponential envelope encodes that the blink is a transient
+//     event, not a repeating oscillation. τ is the recovery constant.
+//
+//  4. SHANNON ENTROPY CONFIDENCE:
+//     H = −Σ p(f) · log p(f) across the freq posterior marginal.
+//     Normalised to [0,1] against maximum (uniform) entropy.
+//     Displayed live in the HUD and on the results page.
+//
+//  5. CSV EXPORT:
+//     downloadCSV() exports trial-by-trial SOA + detected flag plus
+//     a summary block with mean Hz, MAP Hz, τ, and confidence.
+// ════════════════════════════════════════════════════════════════════
+
+// ── Screens ──────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s =>
+    s.classList.toggle('hidden', s.id !== id));
+}
+function showHistory() { renderHistory(); showScreen('history-screen'); }
+
+function toast(msg, ms=2200) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.remove('hidden');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.add('hidden'), ms);
+}
+
+// ── Calibration ───────────────────────────────────────────────────────
+let measuredFPS = 120;
+
+function calibrate() {
+  const timings = []; let last=null, frames=0;
+  function measure(ts) {
+    if (last !== null) timings.push(ts - last);
+    last = ts; frames++;
+    if (frames < 120) { requestAnimationFrame(measure); return; }
+
+    const avg = timings.reduce((a,b)=>a+b,0) / timings.length;
+    const vr  = timings.map(t=>(t-avg)**2).reduce((a,b)=>a+b,0) / timings.length;
+    const std = Math.sqrt(vr);
+    const jPct = (std/avg)*100;
+    measuredFPS = Math.round(1000/avg);
+
+    const isiMs = (2*(1000/measuredFPS)).toFixed(1);
+    document.getElementById('calib-hz').textContent      = measuredFPS + ' Hz';
+    document.getElementById('calib-hz-bar').style.width  = Math.min(100,(measuredFPS/144)*100)+'%';
+    document.getElementById('calib-jitter').textContent  = jPct.toFixed(1)+'% σ';
+    document.getElementById('calib-jitter-bar').style.width = Math.max(0,100-jPct*10)+'%';
+    document.getElementById('calib-isi').textContent     = `1 frame (~${(1000/measuredFPS).toFixed(1)} ms)`;
+
+    const ok = measuredFPS >= 59;
+    document.getElementById('calib-status').textContent  = ok ? '✓ Ready' : '⚠ Low refresh — imprecise timing';
+    document.getElementById('calib-status').style.color  = ok ? 'var(--success)' : 'var(--warning)';
+    document.getElementById('calib-btns').style.opacity  = '1';
+  }
+  requestAnimationFrame(measure);
+}
+
+new MutationObserver((_,obs) => {
+  if (!document.getElementById('calibration-screen').classList.contains('hidden')) {
+    obs.disconnect(); setTimeout(calibrate, 150);
+  }
+}).observe(document.getElementById('calibration-screen'), {attributes:true, attributeFilter:['class']});
+
+// ════════════════════════════════════════════════════════════════════
+//  QUEST+ — Phase-reset Damped Sine Likelihood Model
+//
+//  T1 resets theta to phase 0. Detection follows one damped sinusoidal
+//  cycle from that reset — encodes all three AB landmarks:
+//    Lag-1 sparing : sin rises 0→peak near T/4   (high detection)
+//    Trough        : sin at T/2                   (max suppression)
+//    Recovery      : sin returns to 0 at T        (back to baseline)
+//
+//  P(detect | SOA, f, A, base) =
+//    base − A · sin(2π·f·SOA/1000) · exp(−SOA/250)
+//  clamped [0.02, 0.98]
+//
+//  τ = 250ms fixed. exp(−400/250) ≈ 0.20, exp(−600/250) ≈ 0.09.
+//  2nd trough (~1/f) visible at 250ms (7Hz) to 333ms (3Hz).
+//  SOA candidates span 50–600ms; hybrid 70/30 QUEST/uniform sampling.
+//
+//  Free parameters:
+//    f    = 3.0–7.0 Hz, 20 steps (0.21 Hz resolution)
+//    A    = 0.30–0.75, 6 steps (blink depth)
+//    base = 0.88/0.93/0.97, 3 steps (near-ceiling baseline)
+//  Total: 20 × 6 × 3 = 360 combinations
+//  Sampling: 70% QUEST + 30% uniform random across full 50–600ms range
+// ════════════════════════════════════════════════════════════════════
+const QUEST = (() => {
+  const TAU = 250; // ms — damping constant (exp(-600/250)≈0.09; 2nd trough visible)
+
+  // Frequency grid: 20 points, 3.0–7.0 Hz
+  const nF = 20;
+  const fGrid = Array.from({length:nF}, (_,i) => 3.0 + i * 4.0 / (nF - 1));
+
+  // Amplitude grid: 6 points, 0.30–0.75
+  const ampGrid = [0.30, 0.39, 0.48, 0.57, 0.66, 0.75];
+
+  // Baseline grid: 3 points
+  const baseGrid = [0.88, 0.93, 0.97];
+
+  const nA = ampGrid.length, nB = baseGrid.length;
+  const N  = nF * nA * nB; // 360
+  let logPost = new Float64Array(N).fill(-Math.log(N));
+
+  function idx(fi, ai, bi) { return fi*(nA*nB) + ai*nB + bi; }
+
+  // Damped sine detection probability
+  function pDet(soa_ms, fi, ai, bi) {
+    if (soa_ms <= 0) return baseGrid[bi];
+    const f    = fGrid[fi];
+    const A    = ampGrid[ai];
+    const base = baseGrid[bi];
+    const sine = Math.sin(2 * Math.PI * f * soa_ms / 1000);
+    const env  = Math.exp(-soa_ms / TAU);
+    return Math.max(0.02, Math.min(0.98, base - A * sine * env));
+  }
+
+  // Log-add-exp helper
+  function lae(a, b) {
+    if (a === -Infinity) return b;
+    if (b === -Infinity) return a;
+    return a > b ? a + Math.log(1 + Math.exp(b-a))
+                 : b + Math.log(1 + Math.exp(a-b));
+  }
+
+  // Bayesian update
+  function update(detected, soa_ms) {
+    const lp = new Float64Array(N);
+    for (let fi=0;fi<nF;fi++) for (let ai=0;ai<nA;ai++) for (let bi=0;bi<nB;bi++) {
+      const p = pDet(soa_ms, fi, ai, bi);
+      lp[idx(fi,ai,bi)] = logPost[idx(fi,ai,bi)]
+                        + (detected ? Math.log(p) : Math.log(1-p));
+    }
+    let mx = -Infinity; lp.forEach(v => { if(v>mx) mx=v; });
+    let s  = 0;         lp.forEach(v => s += Math.exp(v-mx));
+    const lz = mx + Math.log(s);
+    for (let i=0;i<N;i++) logPost[i] = lp[i] - lz;
+  }
+
+  // Marginal posterior over frequency
+  function freqPost() {
+    const post = new Float64Array(nF);
+    for (let fi=0;fi<nF;fi++) {
+      let s = -Infinity;
+      for (let ai=0;ai<nA;ai++) for (let bi=0;bi<nB;bi++)
+        s = lae(s, logPost[idx(fi,ai,bi)]);
+      post[fi] = Math.exp(s);
+    }
+    const tot = post.reduce((a,b)=>a+b, 0);
+    return post.map(v => v/tot);
+  }
+
+  // Posterior mean frequency
+  function meanFreq() {
+    const p = freqPost();
+    return p.reduce((m,v,i) => m + v*fGrid[i], 0);
+  }
+
+  // MAP frequency
+  function mapFreq() {
+    const p = freqPost();
+    let best=0, bv=0; p.forEach((v,i) => { if(v>bv){bv=v;best=i;} });
+    return fGrid[best];
+  }
+
+  // Posterior mean amplitude
+  function meanAmp() {
+    const post = new Float64Array(nA);
+    for (let ai=0;ai<nA;ai++) {
+      let s = -Infinity;
+      for (let fi=0;fi<nF;fi++) for (let bi=0;bi<nB;bi++)
+        s = lae(s, logPost[idx(fi,ai,bi)]);
+      post[ai] = Math.exp(s);
+    }
+    const tot = post.reduce((a,b)=>a+b, 0);
+    return post.map(v=>v/tot).reduce((m,v,i)=>m+v*ampGrid[i], 0);
+  }
+
+  // Posterior mean baseline
+  function meanBase() {
+    const post = new Float64Array(nB);
+    for (let bi=0;bi<nB;bi++) {
+      let s = -Infinity;
+      for (let fi=0;fi<nF;fi++) for (let ai=0;ai<nA;ai++)
+        s = lae(s, logPost[idx(fi,ai,bi)]);
+      post[bi] = Math.exp(s);
+    }
+    const tot = post.reduce((a,b)=>a+b, 0);
+    return post.map(v=>v/tot).reduce((m,v,i)=>m+v*baseGrid[i], 0);
+  }
+
+  // Shannon entropy confidence over frequency marginal
+  function confidence() {
+    const p = freqPost();
+    const maxH = Math.log(nF);
+    let H = 0; p.forEach(v => { if(v > 1e-12) H -= v * Math.log(v); });
+    return Math.max(0, Math.min(1, 1 - H/maxH));
+  }
+
+  // Marginalised predicted P(detect | SOA)
+  function predictP(soa_ms) {
+    let p = 0;
+    for (let fi=0;fi<nF;fi++) for (let ai=0;ai<nA;ai++) for (let bi=0;bi<nB;bi++)
+      p += Math.exp(logPost[idx(fi,ai,bi)]) * pDet(soa_ms, fi, ai, bi);
+    return p;
+  }
+
+  // Pick next SOA: maximise expected information (p closest to 0.5)
+  function nextSOA(candidates) {
+    let best=candidates[0], bs=Infinity;
+    candidates.forEach(s => {
+      const sc = Math.abs(predictP(s) - 0.5);
+      if (sc < bs) { bs=sc; best=s; }
+    });
+    return best;
+  }
+
+  function reset() { logPost = new Float64Array(N).fill(-Math.log(N)); }
+
+  // Trough time from posterior mean f: trough at T/2
+  function meanTroughMs() { return 500 / meanFreq(); }
+  function mapTroughMs()  { return 500 / mapFreq();  }
+
+  return {
+    update, predictP, nextSOA, reset,
+    freqPost, fGrid, nF,
+    meanFreq, mapFreq, meanAmp, meanBase,
+    meanTroughMs, mapTroughMs,
+    confidence, TAU
+  };
+})();
+
+// ════════════════════════════════════════════════════════════════════
+//  RSVP ENGINE — Discrete trial state machine
+//
+//  Each trial is a self-contained sequence of phases driven by a simple
+//  per-item frame counter. No wall-clock drift, no global stream index.
+//
+//  Trial phases:
+//    FIXATION  → blank gray + crosshair, 500–900ms jittered
+//    PRE       → 4–8 distractor letters before T1
+//    T1        → single red letter (1 item)
+//    LAG       → 0–N distractor items (SOA-determined)
+//    T2/CATCH  → gray X (probe) or distractor (catch, ~20% of trials)
+//    RUNOUT    → 4–6 distractors; always plays fully regardless of response
+//    ITI       → blank gray 600–1000ms before next trial
+//
+//  Response window: opens at T2 onset, closes at end of RUNOUT.
+//  Catch trials: T1 present, no T2. False alarms tracked but not fed to QUEST.
+//  Button lights up only during response window (T2 trials only).
+// ════════════════════════════════════════════════════════════════════
+const BG_COLOR        = 'rgb(128,128,128)';
+const DIST_COLOR      = '#222222';
+const T1_COLOR        = '#cc0000';
+const FIX_COLOR       = '#1a1a1a';
+const FRAMES_PER_ITEM = 12;   // ~100ms @ 120Hz, ~167ms @ 60Hz
+const STIM_FRAMES     = 11;   // letter visible frames within each item slot
+const FONT_FACE       = 'bold 108px Arial, Helvetica, sans-serif';
+const LETTER_POOL     = ['A','B','C','D','E','F','G','H','J','K','L','M','N','P','R','T','U','V','W','Y'];
+const CATCH_RATE      = 0.25; // fraction of trials with no T2 (~25% keeps participant honest)
+const RUNOUT_ITEMS    = 5;    // distractor items always shown after T2/catch position
+
+let canvas, ctx, animFrame;
+let sessionActive = false;
+const DEBUG_MODE = location.search.includes('debug');
+let trials = [];
+let currentTrial = 0;
+const TOTAL_TRIALS = 120;
+
+let soaCandidates = [];
+let msPerFrame    = 1000 / 120;
+
+// Per-trial state machine
+// phase: 'fixation' | 'pre' | 't1' | 'lag' | 'target' | 'runout' | 'iti'
+let phase = 'fixation';
+let phaseFrame   = 0;   // frame counter within current item
+let phaseItem    = 0;   // item counter within multi-item phases
+let phaseTarget  = 0;   // total frames for fixation phase
+let currentSOA_ms = 0;
+let lagItems      = 0;  // whole distractor items before T2 (for catch trials)
+let lagFrames     = 0;  // frame countdown for precise SOA delivery (probe trials)
+let lagVisFrame   = 0;  // visual frame within current lag item slot (resets each item)
+let useFrameLag   = false; // true = frame-precision lag, false = item-count lag
+let preItems      = 0;  // number of pre-T1 items this trial
+let runoutTarget  = 0;  // total runout items this trial
+let isCatch       = false;
+let responseReceived = false; // set by Yes/No button after stream ends
+let falseAlarms      = 0;
+
+// Letter state for current item
+let currentItem = null;
+
+// Tracking
+let probeHits={}, probeMisses={};
+
+function buildSOACandidates(mspf) {
+  // Frame-resolution SOA candidates from ~1 frame to 600ms.
+  // Extended range captures 2nd trough (~1/f): at 3Hz that's 333ms,
+  // at 7Hz it's 143ms — both now within range.
+  // exp(-600/250) ≈ 0.09 so envelope is near-flat beyond 600ms.
+  const maxFrames = Math.ceil(600 / mspf);
+  const out = [];
+  for (let f = 1; f <= maxFrames; f += 2) {
+    out.push(Math.round(f * mspf));
+  }
+  return out;
+}
+
+// Pick a random letter not recently used (simple no-repeat pool)
+const recentLetters = [];
+function pickLetter() {
+  const avoid = new Set(recentLetters.slice(-6));
+  const pool  = LETTER_POOL.filter(l => !avoid.has(l));
+  const l     = pool[Math.floor(Math.random() * pool.length)];
+  recentLetters.push(l);
+  if (recentLetters.length > 10) recentLetters.shift();
+  return l;
+}
+
+function startSession() {
+  QUEST.reset();
+  trials=[]; currentTrial=0;
+  probeHits={}; probeMisses={};
+  falseAlarms=0;
+  msPerFrame = 1000 / (measuredFPS||120);
+  soaCandidates = buildSOACandidates(msPerFrame);
+
+  // Build trial list: all have T1; ~20% are catch (no T2)
+  for(let i=0;i<TOTAL_TRIALS;i++){
+    const catch_ = Math.random() < CATCH_RATE;
+    trials.push({isCatch: catch_, soa_ms: catch_ ? 0 : null, detected: null});
+  }
+
+  // Seed first 10 non-catch SOAs randomly
+  let seeded=0;
+  for(let i=0;i<TOTAL_TRIALS&&seeded<10;i++){
+    if(!trials[i].isCatch){
+      trials[i].soa_ms = soaCandidates[Math.floor(Math.random()*soaCandidates.length)];
+      seeded++;
+    }
+  }
+
+  showScreen('task-screen');
+  canvas=document.getElementById('task-canvas');
+  ctx=canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  window.addEventListener('keydown',onKey);
+
+  if(DEBUG_MODE) document.getElementById('hud-soa-item').style.visibility='visible';
+  countdown(3, ()=>{ sessionActive=true; startTrial(); });
+}
+
+function resizeCanvas() {
+  if(!canvas) return;
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function countdown(n, cb) {
+  const ov=document.getElementById('countdown-overlay');
+  const nm=document.getElementById('countdown-num');
+  ov.classList.remove('hidden');
+  function tick(i){
+    if(i===0){ov.classList.add('hidden');cb();return;}
+    nm.textContent=i;
+    nm.style.animation='none'; nm.offsetHeight;
+    nm.style.animation='countAnim 1s ease-in-out forwards';
+    setTimeout(()=>tick(i-1),1000);
+  }
+  tick(n);
+}
+
+function startTrial() {
+  if(!sessionActive) return;
+  if(currentTrial>=TOTAL_TRIALS){endSession();return;}
+
+  const trial = trials[currentTrial];
+  isCatch = trial.isCatch;
+
+  if(!isCatch){
+    if(trial.soa_ms===null) {
+      // Hybrid sampling: 70% QUEST (max expected info), 30% uniform random.
+      // Uniform arm ensures coverage of recovery and 2nd trough zones that
+      // QUEST might skip when greedily optimising near the 1st trough.
+      if(Math.random() < 0.30) {
+        trial.soa_ms = soaCandidates[Math.floor(Math.random()*soaCandidates.length)];
+      } else {
+        trial.soa_ms = QUEST.nextSOA(soaCandidates);
+      }
+    }
+    // ±1 frame jitter for continuous-variable SOA coverage
+    const baseFrames = Math.round(trial.soa_ms / msPerFrame);
+    const jitter = Math.floor(Math.random()*3) - 1; // -1, 0, or +1 frame
+    lagFrames = Math.max(1, baseFrames + jitter);
+    currentSOA_ms = Math.round(lagFrames * msPerFrame);
+    trial.soa_ms = currentSOA_ms; // record actual delivered SOA
+    useFrameLag = true;
+    lagItems = 0;
+  } else {
+    currentSOA_ms = 0;
+    lagFrames = 0;
+    useFrameLag = false;
+    lagItems = 3 + Math.floor(Math.random()*3); // 3–5 item lag on catch trials
+  }
+
+  preItems        = 4 + Math.floor(Math.random()*5); // 4–8 pre-T1 items
+  runoutTarget    = RUNOUT_ITEMS;
+  responseReceived = false;
+  recentLetters.length = 0; // fresh pool each trial
+
+  // Enter fixation phase
+  phase       = 'fixation';
+  phaseFrame  = 0;
+  phaseItem   = 0;
+  // Fixation duration: 500–900ms expressed in frames
+  phaseTarget = Math.round((500 + Math.random()*400) / msPerFrame);
+  currentItem = null;
+
+  updateHUD();
+  if(animFrame) cancelAnimationFrame(animFrame);
+  animFrame = requestAnimationFrame(trialLoop);
+}
+
+// ── Discrete trial loop ───────────────────────────────────────────────
+function trialLoop(timestamp) {
+  if(!sessionActive) return;
+
+  phaseFrame++;
+
+  switch(phase) {
+
+    case 'fixation':
+      drawFixation();
+      if(phaseFrame >= phaseTarget) {
+        phase='pre'; phaseFrame=0; phaseItem=0;
+        currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
+      }
+      break;
+
+    case 'pre':
+      drawItemFrame();
+      if(phaseFrame >= FRAMES_PER_ITEM) {
+        phaseFrame=0; phaseItem++;
+        if(phaseItem >= preItems) {
+          phase='t1'; phaseFrame=0;
+          currentItem = {char:pickLetter(), color:T1_COLOR, role:'T1'};
+        } else {
+          currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
+        }
+      }
+      break;
+
+    case 't1':
+      drawItemFrame();
+      if(phaseFrame >= FRAMES_PER_ITEM) {
+        phaseFrame=0; phaseItem=0;
+        if(useFrameLag) {
+          // Frame-precision lag: count down lagFrames from T1 onset
+          // lagFrames already includes the T1 item duration, so remaining
+          // frames to wait = lagFrames - FRAMES_PER_ITEM
+          // remainFrames = frames after T1 offset before T2 onset.
+          // Clamp to minimum 1 so T2 never starts in T1's ISI blank.
+          const remainFrames = Math.max(1, lagFrames - FRAMES_PER_ITEM);
+          if(remainFrames <= 1 && lagFrames <= FRAMES_PER_ITEM) {
+            enterTargetPhase();
+          } else {
+            phase='lag';
+            lagItems    = remainFrames; // raw frame countdown to T2 onset
+            lagVisFrame = 0;            // visual frame resets at item boundaries
+            currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
+          }
+        } else {
+          // Item-count lag (catch trials)
+          if(lagItems > 0) {
+            phase='lag';
+            currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
+          } else {
+            enterTargetPhase();
+          }
+        }
+      }
+      break;
+
+    case 'lag':
+      if(useFrameLag) {
+        // Frame-precision countdown: lagItems counts raw frames to T2 onset.
+        // lagVisFrame tracks position within the current item slot independently,
+        // so distractor letters render correctly for full STIM_FRAMES duration
+        // regardless of where in the slot the countdown started.
+        lagVisFrame++;
+        if(lagVisFrame > FRAMES_PER_ITEM) {
+          lagVisFrame = 1; // new item slot — pick fresh distractor
+          currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
+        }
+        if(lagVisFrame <= STIM_FRAMES) drawItem(currentItem);
+        else                            drawBg(); // 1-frame ISI blank
+        lagItems--;
+        if(lagItems <= 0) enterTargetPhase();
+      } else {
+        // Item-count lag (catch trials)
+        drawItemFrame();
+        if(phaseFrame >= FRAMES_PER_ITEM) {
+          phaseFrame=0; phaseItem++;
+          if(phaseItem >= lagItems) {
+            enterTargetPhase();
+          } else {
+            currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
+          }
+        }
+      }
+      break;
+
+    case 'target':
+      // responseWindow already opened in enterTargetPhase()
+      drawItemFrame();
+      if(phaseFrame >= FRAMES_PER_ITEM) {
+        phaseFrame=0; phaseItem=0;
+        // Close button glow but window stays open through runout
+        // response window closed — no visual change
+        phase='runout';
+        currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
+      }
+      break;
+
+    case 'runout':
+      drawItemFrame();
+      if(phaseFrame >= FRAMES_PER_ITEM) {
+        phaseFrame=0; phaseItem++;
+        if(phaseItem >= runoutTarget) {
+          // Runout complete — show Yes/No prompt, wait for response
+          showResponsePrompt();
+          return;
+        } else {
+          currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
+        }
+      }
+      break;
+  }
+
+  animFrame = requestAnimationFrame(trialLoop);
+}
+
+function enterTargetPhase() {
+  phase = 'target'; phaseFrame = 0; phaseItem = 0;
+  currentItem = isCatch
+    ? {char:pickLetter(), color:DIST_COLOR, role:'dist'}
+    : {char:'X',          color:DIST_COLOR, role:'T2'};
+  // Response collected retrospectively via Yes/No buttons after stream
+}
+
+// ── Draw functions ────────────────────────────────────────────────────
+function drawBg(){
+  ctx.fillStyle=BG_COLOR;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+function drawItemFrame(){
+  if(phaseFrame <= STIM_FRAMES) drawItem(currentItem);
+  else                           drawBg(); // 1-frame ISI blank
+}
+
+function drawItem(item){
+  drawBg();
+  ctx.font=FONT_FACE;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle=item.color;
+  ctx.fillText(item.char, canvas.width/2, canvas.height/2);
+}
+
+function drawFixation(){
+  drawBg();
+  const cx=canvas.width/2, cy=canvas.height/2;
+  ctx.strokeStyle=FIX_COLOR; ctx.lineWidth=2.5; ctx.lineCap='round';
+  const s=18;
+  ctx.beginPath(); ctx.moveTo(cx-s,cy); ctx.lineTo(cx+s,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,cy-s); ctx.lineTo(cx,cy+s); ctx.stroke();
+}
+
+function showResponsePrompt() {
+  if(animFrame) { cancelAnimationFrame(animFrame); animFrame=null; }
+  drawBg(); // clear canvas to gray
+  document.getElementById('response-prompt').style.display = 'flex';
+}
+
+function registerResponse(detected) {
+  if(!sessionActive) return;
+  document.getElementById('response-prompt').style.display = 'none';
+  playBeep();
+  responseReceived = detected;
+  finishTrial();
+}
+
+// ── Audio feedback ─────────────────────────────────────────────────────
+let audioCtx = null;
+function playBeep(){
+  try {
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.08);
+  } catch(e) {}
+}
+
+function onKey(e){
+  // Space/Enter answer Yes when prompt is visible
+  if((e.code==='Space'||e.code==='Enter') &&
+      document.getElementById('response-prompt').style.display !== 'none'){
+    e.preventDefault(); registerResponse(true);
+  }
+  if(e.code==='Escape'&&sessionActive){
+    sessionActive=false; cancelAnimationFrame(animFrame); showScreen('home-screen');
+  }
+}
+
+function finishTrial(){
+  if(!sessionActive) return;
+  const detected = responseReceived; // set by Yes/No button
+  trials[currentTrial].detected = detected;
+
+  if(isCatch){
+    if(detected) falseAlarms++;
+  } else {
+    const soa = currentSOA_ms;
+    if(!probeHits[soa]){probeHits[soa]=0; probeMisses[soa]=0;}
+    if(detected) probeHits[soa]++; else probeMisses[soa]++;
+    QUEST.update(detected?1:0, soa);
+    const ni = currentTrial+1;
+    if(ni<TOTAL_TRIALS && trials[ni] && !trials[ni].isCatch && trials[ni].soa_ms===null)
+      trials[ni].soa_ms = QUEST.nextSOA(soaCandidates);
+  }
+
+  currentTrial++;
+  updateHUD();
+  drawBg();
+  // ITI: 600–1000ms blank before next trial
+  setTimeout(startTrial, 600 + Math.random()*400);
+}
+
+function updateHUD(){
+  document.getElementById('hud-trial').textContent=`${currentTrial} / ${TOTAL_TRIALS}`;
+  if(DEBUG_MODE) document.getElementById('hud-soa').textContent=isCatch?'catch':currentSOA_ms+'ms';
+  const c=(QUEST.confidence()*100).toFixed(0);
+  document.getElementById('hud-conf').style.width=c+'%';
+}
+
+// ── End session & results ─────────────────────────────────────────────
+function endSession(){
+  sessionActive=false;
+  if(animFrame) cancelAnimationFrame(animFrame);
+  window.removeEventListener('resize',resizeCanvas);
+  window.removeEventListener('keydown',onKey);
+
+  // Damped sine model outputs — frequency is a direct parameter
+  const thetaHz   = QUEST.meanFreq();
+  const thetaMAP  = QUEST.mapFreq();
+  const troughMs  = QUEST.meanTroughMs();   // T/2 from posterior mean f
+  const troughMAP = QUEST.mapTroughMs();
+  const ampVal    = QUEST.meanAmp();
+  const baseP     = QUEST.meanBase();
+  const basePct   = (baseP*100).toFixed(1);
+
+  // Empirical blink depth from raw data
+  let minP=baseP;
+  Object.keys(probeHits).forEach(s=>{
+    const t=(probeHits[s]||0)+(probeMisses[s]||0);
+    if(t>=3){const p=probeHits[s]/t; if(p<minP) minP=p;}
+  });
+  const blinkDepth=((baseP-minP)*100).toFixed(0);
+
+  // Lag-1 sparing SOA = T/4 from mean f; recovery = T
+  const sparingMs  = Math.round(250 / thetaHz); // T/4
+  const recoveryMs = Math.round(1000 / thetaHz); // T
+
+  // Shannon entropy confidence over frequency posterior
+  const conf      = QUEST.confidence();
+  const confPct   = (conf*100).toFixed(0);
+  const confLabel = conf<0.3?'Low':conf<0.55?'Moderate':conf<0.78?'Good':'High';
+  const confColor = conf<0.3?'var(--danger)':conf<0.55?'var(--warning)':conf<0.78?'var(--theta)':'var(--success)';
+
+  // Update result card labels
+  document.querySelector('#res-period').previousElementSibling.textContent='Trough';
+  document.querySelector('#res-tau').previousElementSibling.textContent='Blink Depth (A)';
+
+  document.getElementById('res-hz').textContent=thetaHz.toFixed(2);
+  document.getElementById('res-unit').textContent=`Hz  ·  MAP ${thetaMAP.toFixed(2)} Hz`;
+  document.getElementById('res-period').textContent=Math.round(troughMs)+' ms';
+  document.getElementById('res-depth').textContent=blinkDepth+'%';
+  document.getElementById('res-baseline').textContent=basePct+'% (prior)';
+  document.getElementById('res-tau').textContent=`A=${ampVal.toFixed(2)}`;
+  document.getElementById('conf-bar').style.width=confPct+'%';
+  document.getElementById('conf-label').textContent=`${confLabel} · ${confPct}%`;
+  document.getElementById('conf-label').style.color=confColor;
+
+  const freqInterp = thetaHz > 6.0
+    ? `Fast theta — short cycle, early trough. Consistent with high alertness.`
+    : thetaHz < 4.0
+    ? `Slow theta — long cycle, late trough. May reflect elevated cognitive load or fatigue.`
+    : `Mid-range theta — aligns with canonical AB literature (Bonnefond &amp; Jensen 2012).`;
+
+  const catchTrials = trials.filter(t=>t.isCatch&&t.detected!==null).length;
+  const faRate = catchTrials > 0 ? ((falseAlarms/catchTrials)*100).toFixed(0) : '—';
+
+  document.getElementById('blink-interp').innerHTML=
+    `Theta reset by T1 at <strong>${thetaHz.toFixed(2)} Hz</strong> (MAP: ${thetaMAP.toFixed(2)} Hz). ` +
+    `Cycle landmarks — lag-1 sparing peak: ~${sparingMs} ms, ` +
+    `trough: ~${Math.round(troughMs)} ms, recovery: ~${recoveryMs} ms. ` +
+    `Blink depth A=${ampVal.toFixed(2)} (model), ↓${blinkDepth}% (empirical). ` +
+    `${freqInterp}` +
+    `<br><br>False alarm rate: <strong>${faRate}%</strong> on ${catchTrials} catch trials. ` +
+    `${falseAlarms > catchTrials*0.4 ? '⚠ High false alarm rate — response criterion may be too liberal.' : 'Response criterion looks appropriate.'}` +
+    `<br>Confidence: <strong style="color:${confColor}">${confLabel} (${confPct}%)</strong>. ` +
+    `${conf<0.5?'Posterior is broad — run another session to sharpen the estimate.':'Posterior is focused. This frequency may be your neural fingerprint.'}`;
+
+  drawSOAChart(baseP, troughMs);
+  drawFreqChart();
+  saveResult(thetaHz, thetaMAP, troughMs, ampVal, basePct, blinkDepth, confPct);
+  showScreen('results-screen');
+}
+
+// ── Charts ────────────────────────────────────────────────────────────
+function drawSOAChart(baseP, troughMs){
+  const el=document.getElementById('soa-chart');
+  const ctx2=el.getContext('2d');
+  const W=el.parentElement.offsetWidth-2, H=170;
+  el.width=W*devicePixelRatio; el.height=H*devicePixelRatio;
+  el.style.width=W+'px'; el.style.height=H+'px';
+  ctx2.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx2.clearRect(0,0,W,H);
+
+  const pad={l:36,r:12,t:12,b:30};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+
+  // Grid lines
+  ctx2.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+cH*(1-i/4);
+    ctx2.strokeStyle='rgba(28,28,46,1)';
+    ctx2.beginPath();ctx2.moveTo(pad.l,y);ctx2.lineTo(pad.l+cW,y);ctx2.stroke();
+    ctx2.fillStyle='rgba(90,90,122,0.65)';ctx2.font='8px Space Mono';ctx2.textAlign='right';
+    ctx2.fillText((i*25)+'%',pad.l-3,y+3);
+  }
+
+  const keys=Object.keys(probeHits).map(Number).sort((a,b)=>a-b);
+  if(keys.length<2) return;
+  const minS=keys[0], maxS=keys[keys.length-1], sR=maxS-minS||1;
+  const sx=s=>pad.l+(s-minS)/sR*cW;
+  const py=p=>pad.t+cH*(1-p);
+
+  // Model curve (posterior predictive) — always drawn over full candidate
+  // range so lag-1 sparing and recovery peaks are never clipped by data extent
+  const modelMin=50, modelMax=600;
+  const mR=modelMax-modelMin;
+  const msx=s=>pad.l+(s-modelMin)/mR*cW;
+  ctx2.strokeStyle='rgba(0,229,255,0.6)';ctx2.lineWidth=2;ctx2.setLineDash([]);
+  ctx2.beginPath();let first=true;
+  for(let s=modelMin;s<=modelMax;s+=4){
+    const p=QUEST.predictP(s),x=msx(s),y=py(p);
+    first?ctx2.moveTo(x,y):ctx2.lineTo(x,y);first=false;
+  }
+  ctx2.stroke();
+  // Trough marker uses model x-scale
+  const mTroughX = msx(troughMs);
+  if(troughMs>=modelMin && troughMs<=modelMax){
+    ctx2.strokeStyle='rgba(255,157,0,0.5)'; ctx2.lineWidth=1; ctx2.setLineDash([3,3]);
+    ctx2.beginPath();ctx2.moveTo(mTroughX,pad.t);ctx2.lineTo(mTroughX,pad.t+cH);ctx2.stroke();
+    ctx2.setLineDash([]);
+    ctx2.fillStyle='rgba(255,157,0,0.7)';ctx2.font='8px Space Mono';ctx2.textAlign='center';
+    ctx2.fillText('T/2',mTroughX,pad.t+8);
+  }
+
+  // Baseline ref
+  ctx2.strokeStyle='rgba(57,255,138,0.38)';ctx2.lineWidth=1;ctx2.setLineDash([2,4]);
+  ctx2.beginPath();ctx2.moveTo(pad.l,py(baseP));ctx2.lineTo(pad.l+cW,py(baseP));ctx2.stroke();
+  ctx2.setLineDash([]);
+
+  // Data points (sized by n) — use same msx scale as model curve
+  keys.forEach(soa=>{
+    const tot=(probeHits[soa]||0)+(probeMisses[soa]||0);
+    if(!tot) return;
+    const p=probeHits[soa]/tot, x=msx(soa), y=py(p), r=Math.max(3,Math.min(8,tot));
+    ctx2.fillStyle='rgba(0,229,255,0.15)';ctx2.beginPath();ctx2.arc(x,y,r,0,Math.PI*2);ctx2.fill();
+    ctx2.strokeStyle='#00e5ff';ctx2.lineWidth=1.5;ctx2.beginPath();ctx2.arc(x,y,r,0,Math.PI*2);ctx2.stroke();
+  });
+
+  // Axis labels — show fixed points across full model range
+  ctx2.fillStyle='rgba(90,90,122,0.6)';ctx2.font='8px Space Mono';ctx2.textAlign='center';
+  [50,150,300,450,600].forEach(s=>ctx2.fillText(s+'ms',msx(s),pad.t+cH+19));
+  ctx2.fillStyle='rgba(90,90,122,0.38)';ctx2.textAlign='left';ctx2.fillText('SOA →',pad.l,pad.t+cH+28);
+
+  // Legend
+  ctx2.fillStyle='rgba(0,229,255,0.55)';ctx2.textAlign='right';ctx2.fillText('— model',pad.l+cW,pad.t+10);
+  ctx2.fillStyle='rgba(57,255,138,0.45)';ctx2.fillText('— est. base',pad.l+cW,pad.t+21);
+  ctx2.fillStyle='rgba(255,157,0,0.6)';ctx2.fillText('| trough μ',pad.l+cW,pad.t+32);
+}
+
+// Posterior over theta frequency
+function drawFreqChart(){
+  const el=document.getElementById('freq-chart');
+  const ctx2=el.getContext('2d');
+  const W=el.parentElement.offsetWidth-2, H=100;
+  el.width=W*devicePixelRatio; el.height=H*devicePixelRatio;
+  el.style.width=W+'px'; el.style.height=H+'px';
+  ctx2.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx2.clearRect(0,0,W,H);
+
+  const post = QUEST.freqPost();
+  const grid = QUEST.fGrid;
+  const nF   = QUEST.nF;
+  const pad  = {l:26,r:10,t:12,b:22};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  const maxP = Math.max(...post)||1;
+  const bw   = cW/nF*0.78;
+
+  // Bars
+  post.forEach((p,i)=>{
+    const x=pad.l+(i+0.5)*cW/nF - bw/2;
+    const bh=(p/maxP)*cH;
+    ctx2.fillStyle=`rgba(0,229,255,${(0.15+p/maxP*0.75).toFixed(2)})`;
+    ctx2.fillRect(x, pad.t+cH-bh, bw, bh);
+  });
+
+  // MAP marker
+  const mapF = QUEST.mapFreq();
+  const mapI = grid.reduce((bi,v,i)=>Math.abs(v-mapF)<Math.abs(grid[bi]-mapF)?i:bi,0);
+  const mx   = pad.l+(mapI+0.5)*cW/nF;
+  ctx2.strokeStyle='rgba(0,229,255,0.9)'; ctx2.lineWidth=1.5;
+  ctx2.beginPath();ctx2.moveTo(mx,pad.t);ctx2.lineTo(mx,pad.t+cH);ctx2.stroke();
+  ctx2.fillStyle='var(--theta)';ctx2.font='bold 9px Space Mono';ctx2.textAlign='center';
+  ctx2.fillText(mapF.toFixed(1)+'Hz',mx,pad.t+8);
+
+  // X-axis labels
+  ctx2.fillStyle='rgba(90,90,122,0.55)';ctx2.font='8px Space Mono';ctx2.textAlign='center';
+  [0, Math.floor(nF/2), nF-1].forEach(i=>{
+    ctx2.fillText(grid[i].toFixed(1)+'Hz', pad.l+(i+0.5)*cW/nF, pad.t+cH+14);
+  });
+  ctx2.textAlign='right';ctx2.fillStyle='rgba(90,90,122,0.38)';
+  ctx2.fillText('f →',pad.l+cW,pad.t+cH+22);
+
+  // Update DOM label
+  const lbl=el.previousElementSibling;
+  if(lbl) lbl.textContent='Posterior Probability — Theta Frequency';
+}
+
+// ── CSV Export ────────────────────────────────────────────────────────
+function downloadCSV(){
+  let csv='Trial,Type,SOA_ms,Detected\n';
+  trials.forEach((t,i)=>{
+    if(t.detected===null) return;
+    csv+=`${i+1},${t.isCatch?'catch':'probe'},${t.isCatch?'':t.soa_ms??''},${t.detected?1:0}\n`;
+  });
+  csv+=`\nSummary\n`;
+  csv+=`Model,Damped Sine (tau=250ms)\n`;
+  csv+=`Freq_Hz_mean,${QUEST.meanFreq().toFixed(4)}\n`;
+  csv+=`Freq_Hz_MAP,${QUEST.mapFreq().toFixed(4)}\n`;
+  csv+=`Trough_ms_mean,${QUEST.meanTroughMs().toFixed(2)}\n`;
+  csv+=`Amp_mean,${QUEST.meanAmp().toFixed(4)}\n`;
+  csv+=`Base_mean,${QUEST.meanBase().toFixed(4)}\n`;
+  csv+=`Confidence_pct,${(QUEST.confidence()*100).toFixed(2)}\n`;
+  csv+=`Catch_trials,${trials.filter(t=>t.isCatch&&t.detected!==null).length}\n`;
+  csv+=`False_alarms,${falseAlarms}\n`;
+
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`theta_dampedsine_${Date.now()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exported');
+}
+
+// ── Storage ────────────────────────────────────────────────────────────
+function saveResult(hz, mapHz, troughMs, ampVal, baselineRate, blinkDepth, confPct){
+  const h=JSON.parse(localStorage.getItem('theta_history')||'[]');
+  h.unshift({
+    hz: parseFloat(hz).toFixed(2),
+    mapHz: parseFloat(mapHz).toFixed(2),
+    troughMs: Math.round(troughMs),
+    amp: parseFloat(ampVal).toFixed(2),
+    baselineRate, blinkDepth, confPct,
+    trials: currentTrial,
+    date: new Date().toLocaleDateString(),
+    time: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+  });
+  if(h.length>30) h.splice(30);
+  localStorage.setItem('theta_history',JSON.stringify(h));
+}
+
+function renderHistory(){
+  const list=document.getElementById('history-list');
+  const h=JSON.parse(localStorage.getItem('theta_history')||'[]');
+  if(!h.length){
+    list.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:32px;">No sessions yet.</div>';
+    return;
+  }
+  list.innerHTML=h.map(s=>`
+    <div class="history-entry">
+      <div>
+        <div class="history-hz">${s.hz} Hz</div>
+        <div class="history-conf">trough ${s.troughMs??'—'}ms · A=${s.amp??s.sigma??'—'} · Blink ↓${s.blinkDepth}% · Conf ${s.confPct}%</div>
+      </div>
+      <div class="history-meta">${s.date}<br>${s.time}<br>${s.trials} trials</div>
+    </div>`).join('');
+}
+
+function clearHistory(){
+  if(confirm('Clear all session history?')){
+    localStorage.removeItem('theta_history'); renderHistory();
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+// keydown handled by onKey(), registered in startSession()
+</script>
+</body>
+</html>
