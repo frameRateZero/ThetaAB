@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v11</title>
+<title>θ WAVE — Attentional Blink Lab v12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -124,7 +124,7 @@
   .response-prompt{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
     display:flex;flex-direction:column;align-items:stretch;gap:0;z-index:20;
     background:rgba(8,8,15,0.92);border:1px solid var(--border);border-radius:20px;
-    padding:16px 20px;backdrop-filter:blur(12px);width:min(300px,88vw);}
+    padding:16px 20px;backdrop-filter:blur(12px);width:min(360px,94vw);}
   .response-block{display:flex;flex-direction:column;align-items:stretch;gap:8px;}
   .response-divider{height:1px;background:var(--border);margin:12px 0;}
   .response-question{font-family:var(--font-display);font-size:9px;font-weight:700;
@@ -140,6 +140,21 @@
   .resp-no,.resp-odd{background:rgba(255,60,90,0.08);border-color:rgba(255,60,90,0.35);color:var(--danger);}
   .resp-no:active,.resp-odd:active{background:rgba(255,60,90,0.20);transform:scale(0.95);}
   .resp-btn-selected{opacity:0.45;pointer-events:none;}
+  .rating-clusters{display:flex;gap:16px;width:100%;justify-content:center;}
+  .rating-cluster{display:flex;flex-direction:column;gap:6px;flex:1;}
+  .rating-row{display:flex;gap:6px;}
+  .rating-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+    text-align:center;margin-top:2px;font-family:var(--font-display);}
+  .rating-btn{flex:1;height:56px;border-radius:10px;border:2px solid;
+    font-family:var(--font-display);font-size:14px;font-weight:700;
+    cursor:pointer;transition:all 0.1s;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;}
+  .rating-pos{background:rgba(57,255,138,0.08);
+    border-color:rgba(57,255,138,0.35);color:var(--success);}
+  .rating-pos:active{background:rgba(57,255,138,0.25);transform:scale(0.95);}
+  .rating-neg{background:rgba(255,60,90,0.08);
+    border-color:rgba(255,60,90,0.35);color:var(--danger);}
+  .rating-neg:active{background:rgba(255,60,90,0.25);transform:scale(0.95);}
 
   /* RESULTS */
   #results-screen{gap:18px;overflow-y:auto;padding:44px 24px 64px;justify-content:flex-start;}
@@ -223,7 +238,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v11</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v12</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -238,7 +253,7 @@
     <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v11 changelog:</strong> QUEST now maximises Expected Information Gain about frequency (not threshold) &middot; Trials slider min 20 for quick testing &middot; SOA coverage across full oscillation
+    <strong>v12 changelog:</strong> 9-point confidence rating (−4 to +4) replaces Yes/No &middot; QUEST weighted by confidence &middot; Mean rating line on SOA chart &middot; T2_Rating in CSV
   </div>
   <div class="settings-panel">
     <div class="settings-title">&#9881; Session Settings</div>
@@ -396,10 +411,32 @@
     </div>
     <div class="response-divider"></div>
     <div class="response-block">
-      <div class="response-question">Did you see the X?</div>
+      <div class="response-question">Did you see the X? Rate confidence</div>
       <div class="response-btns">
-        <button class="resp-yes" id="resp-yes" onpointerdown="answerT2(true)">Yes</button>
-        <button class="resp-no"  id="resp-no"  onpointerdown="answerT2(false)">No</button>
+        <div class="rating-clusters">
+          <div class="rating-cluster">
+            <div class="rating-row">
+              <button class="rating-btn rating-neg" onpointerdown="answerT2(-4)">−4</button>
+              <button class="rating-btn rating-neg" onpointerdown="answerT2(-3)">−3</button>
+            </div>
+            <div class="rating-row">
+              <button class="rating-btn rating-neg" onpointerdown="answerT2(-2)">−2</button>
+              <button class="rating-btn rating-neg" onpointerdown="answerT2(-1)">−1</button>
+            </div>
+            <div class="rating-label" style="color:var(--danger)">Didn't see it</div>
+          </div>
+          <div class="rating-cluster">
+            <div class="rating-row">
+              <button class="rating-btn rating-pos" onpointerdown="answerT2(3)">+3</button>
+              <button class="rating-btn rating-pos" onpointerdown="answerT2(4)">+4</button>
+            </div>
+            <div class="rating-row">
+              <button class="rating-btn rating-pos" onpointerdown="answerT2(1)">+1</button>
+              <button class="rating-btn rating-pos" onpointerdown="answerT2(2)">+2</button>
+            </div>
+            <div class="rating-label" style="color:var(--success)">Saw it</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -476,7 +513,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v11 — Attentional Blink Theta Estimator
+//  θ WAVE v12 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -619,13 +656,14 @@ const QUEST = (() => {
                  : b + Math.log(1 + Math.exp(a-b));
   }
 
-  // Bayesian update
-  function update(detected, soa_ms) {
+  // Bayesian update — weight in [0,1] scales likelihood contribution
+  // weight = |rating|/4 so high-confidence trials update more strongly
+  function update(detected, soa_ms, weight=1.0) {
     const lp = new Float64Array(N);
     for (let fi=0;fi<nF;fi++) for (let ai=0;ai<nA;ai++) for (let bi=0;bi<nB;bi++) {
-      const p = pDet(soa_ms, fi, ai, bi);
-      lp[idx(fi,ai,bi)] = logPost[idx(fi,ai,bi)]
-                        + (detected ? Math.log(p) : Math.log(1-p));
+      const p   = pDet(soa_ms, fi, ai, bi);
+      const ll  = detected ? Math.log(p) : Math.log(1-p);
+      lp[idx(fi,ai,bi)] = logPost[idx(fi,ai,bi)] + weight * ll;
     }
     let mx = -Infinity; lp.forEach(v => { if(v>mx) mx=v; });
     let s  = 0;         lp.forEach(v => s += Math.exp(v-mx));
@@ -841,6 +879,8 @@ let preItems      = 0;  // number of pre-T1 items this trial
 let runoutTarget  = 0;  // total runout items this trial
 let isCatch       = false;
 let responseReceived = false; // set by Yes/No button after stream ends
+let t2Rating      = 0;     // -4..+4 confidence rating
+let t2Weight      = 0;     // |rating|/4 — QUEST update weight
 let t1Digit       = '';   // digit shown as T1 this trial
 let t1Correct     = false; // true if participant correctly identified Even/Odd
 let t1Discarded   = 0;    // running count of T1-failed trials (not fed to QUEST)
@@ -850,7 +890,7 @@ let falseAlarms      = 0;
 let currentItem = null;
 
 // Tracking
-let probeHits={}, probeMisses={};
+let probeHits={}, probeMisses={}, probeRatings={};
 
 function buildSOACandidates(mspf) {
   // Frame-resolution SOA candidates from ~1 frame to 600ms.
@@ -926,7 +966,7 @@ function startSession() {
   applySettings();
   QUEST.reset();
   trials=[]; currentTrial=0;
-  probeHits={}; probeMisses={};
+  probeHits={}; probeMisses={}; probeRatings={};
   falseAlarms=0;
   t1Discarded=0;
   msPerFrame = 1000 / (measuredFPS||120);
@@ -1016,6 +1056,8 @@ function startTrial() {
   responseReceived = false;
   t1Digit           = '';
   t1Correct         = false;
+  t2Rating          = 0;
+  t2Weight          = 0;
   recentLetters.length = 0; // fresh pool each trial
 
   // Enter fixation phase
@@ -1194,8 +1236,7 @@ let _t2Answer  = null; // true | false | null
 function showResponsePrompt() {
   if(animFrame) { cancelAnimationFrame(animFrame); animFrame=null; }
   _t1Answer = null; _t2Answer = null;
-  // Reset button opacity
-  document.querySelectorAll('.resp-even,.resp-odd,.resp-yes,.resp-no')
+  document.querySelectorAll('.resp-even,.resp-odd,.rating-btn')
     .forEach(b => b.classList.remove('resp-btn-selected'));
   drawBg();
   document.getElementById('response-prompt').style.display = 'flex';
@@ -1212,22 +1253,23 @@ function answerT1(evenOdd) {
   if(_t2Answer !== null) _submitAnswers();
 }
 
-function answerT2(detected) {
-  if(_t2Answer !== null) return; // already answered
-  _t2Answer = detected;
-  const chosen = detected ? '.resp-yes' : '.resp-no';
-  const other  = detected ? '.resp-no'  : '.resp-yes';
-  document.querySelector(other).classList.add('resp-btn-selected');
+function answerT2(rating) {
+  // rating: -4 to -1 (miss) or +1 to +4 (hit). 0 not used — forced commitment.
+  if(_t2Answer !== null || rating === 0) return;
+  _t2Answer = rating;
   playBeep();
   if(_t1Answer !== null) _submitAnswers();
 }
 
 function _submitAnswers() {
   document.getElementById('response-prompt').style.display = 'none';
-  // Evaluate T1 accuracy
   const isEven = EVEN_DIGITS.has(t1Digit);
   t1Correct    = (_t1Answer === 'even') === isEven;
-  responseReceived = _t2Answer;
+  // _t2Answer is now a rating -4..+4
+  // detected = rating > 0; weight = |rating|/4 for QUEST update
+  responseReceived = _t2Answer > 0; // boolean for hit/miss logic
+  t2Rating         = _t2Answer;     // raw rating stored in trial
+  t2Weight         = Math.abs(_t2Answer) / 4; // confidence weight [0,1]
   finishTrial();
 }
 
@@ -1259,6 +1301,7 @@ function finishTrial(){
   if(!sessionActive) return;
   const detected = responseReceived; // set by Yes/No button
   trials[currentTrial].detected   = detected;
+  trials[currentTrial].t2Rating   = t2Rating;
   trials[currentTrial].t1Digit   = t1Digit;
   trials[currentTrial].t1Correct = t1Correct;
 
@@ -1273,9 +1316,10 @@ function finishTrial(){
     } else {
       // T1 correct — T2 detection is valid, feed QUEST
       const soa = currentSOA_ms;
-      if(!probeHits[soa]){probeHits[soa]=0; probeMisses[soa]=0;}
+      if(!probeHits[soa]){probeHits[soa]=0; probeMisses[soa]=0; probeRatings[soa]=[];}
       if(detected) probeHits[soa]++; else probeMisses[soa]++;
-      QUEST.update(detected?1:0, soa);
+      probeRatings[soa].push(t2Rating);
+      QUEST.update(detected?1:0, soa, t2Weight);
       const ni = currentTrial+1;
       if(ni<TOTAL_TRIALS && trials[ni] && !trials[ni].isCatch && trials[ni].soa_ms===null)
         trials[ni].soa_ms = QUEST.nextSOA(soaCandidates);
@@ -1432,7 +1476,7 @@ function drawSOAChart(baseP, troughMs){
   ctx2.beginPath();ctx2.moveTo(pad.l,py(baseP));ctx2.lineTo(pad.l+cW,py(baseP));ctx2.stroke();
   ctx2.setLineDash([]);
 
-  // Data points (sized by n) — use same msx scale as model curve
+  // Data points — detection rate dots + mean rating overlay
   keys.forEach(soa=>{
     const tot=(probeHits[soa]||0)+(probeMisses[soa]||0);
     if(!tot) return;
@@ -1440,6 +1484,20 @@ function drawSOAChart(baseP, troughMs){
     ctx2.fillStyle='rgba(0,229,255,0.15)';ctx2.beginPath();ctx2.arc(x,y,r,0,Math.PI*2);ctx2.fill();
     ctx2.strokeStyle='#00e5ff';ctx2.lineWidth=1.5;ctx2.beginPath();ctx2.arc(x,y,r,0,Math.PI*2);ctx2.stroke();
   });
+
+  // Mean rating line (normalised to 0–1: rating+4 / 8)
+  const rkeys=Object.keys(probeRatings).map(Number).sort((a,b)=>a-b).filter(s=>probeRatings[s].length>=2);
+  if(rkeys.length>=2){
+    ctx2.strokeStyle='rgba(255,157,0,0.7)';ctx2.lineWidth=1.5;ctx2.setLineDash([2,3]);
+    ctx2.beginPath();let rf=true;
+    rkeys.forEach(s=>{
+      const ratings=probeRatings[s];
+      const mean=ratings.reduce((a,b)=>a+b,0)/ratings.length;
+      const ny=py((mean+4)/8); // map -4..+4 → 0..1 (0 excluded, scale still correct)
+      rf?ctx2.moveTo(msx(s),ny):ctx2.lineTo(msx(s),ny); rf=false;
+    });
+    ctx2.stroke();ctx2.setLineDash([]);
+  }
 
   // Axis labels — show fixed points across full model range
   ctx2.fillStyle='rgba(90,90,122,0.6)';ctx2.font='8px Space Mono';ctx2.textAlign='center';
@@ -1450,6 +1508,7 @@ function drawSOAChart(baseP, troughMs){
   ctx2.fillStyle='rgba(0,229,255,0.55)';ctx2.textAlign='right';ctx2.fillText('— model',pad.l+cW,pad.t+10);
   ctx2.fillStyle='rgba(57,255,138,0.45)';ctx2.fillText('— est. base',pad.l+cW,pad.t+21);
   ctx2.fillStyle='rgba(255,157,0,0.6)';ctx2.fillText('| trough μ',pad.l+cW,pad.t+32);
+  ctx2.fillStyle='rgba(255,157,0,0.5)';ctx2.fillText('-- mean rating',pad.l+cW,pad.t+43);
 }
 
 // Posterior over theta frequency
@@ -1502,11 +1561,11 @@ function drawFreqChart(){
 
 // ── CSV Export ────────────────────────────────────────────────────────
 function downloadCSV(){
-  let csv='Trial,Type,SOA_ms,T1_Digit,T1_Correct,T2_Detected,T2_Valid\n';
+  let csv='Trial,Type,SOA_ms,T1_Digit,T1_Correct,T2_Rating,T2_Detected,T2_Valid\n';
   trials.forEach((t,i)=>{
     if(t.detected===null) return;
     const t2valid = !t.isCatch && t.t1Correct ? 1 : (t.isCatch ? '' : 0);
-    csv+=`${i+1},${t.isCatch?'catch':'probe'},${t.isCatch?'':t.soa_ms??''},${t.t1Digit??''},${t.t1Correct?1:0},${t.detected?1:0},${t2valid}\n`;
+    csv+=`${i+1},${t.isCatch?'catch':'probe'},${t.isCatch?'':t.soa_ms??''},${t.t1Digit??''},${t.t1Correct?1:0},${t.t2Rating??''},${t.detected?1:0},${t2valid}\n`;
   });
   csv+=`\nSummary\n`;
   csv+=`Model,Damped Sine (tau=250ms)\n`;
