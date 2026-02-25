@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v12</title>
+<title>θ WAVE — Attentional Blink Lab v13</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -238,7 +238,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v12</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v13</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -253,7 +253,7 @@
     <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v12 changelog:</strong> 9-point confidence rating (−4 to +4) replaces Yes/No &middot; QUEST weighted by confidence &middot; Mean rating line on SOA chart &middot; T2_Rating in CSV
+    <strong>v13 changelog:</strong> T1 task toggle: Even/Odd vs Low(1–4)/High(6–9) &middot; Digit 5 excluded in Low/High mode &middot; Trial defaults: 10% contrast, 67ms, white, 96px &middot; 2×2 rating clusters
   </div>
   <div class="settings-panel">
     <div class="settings-title">&#9881; Session Settings</div>
@@ -274,9 +274,19 @@
     <div class="setting-row">
       <div class="setting-label"><span class="setting-name">T1 Color</span></div>
       <div class="setting-toggle" id="tog-t1color">
-        <button onclick="setT1Color('same')" class="active">Same</button>
-        <button onclick="setT1Color('white')">White</button>
+        <button onclick="setT1Color('same')">Same</button>
+        <button onclick="setT1Color('white')" class="active">White</button>
         <button onclick="setT1Color('red')">Red</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">
+        <span class="setting-name">T1 Task</span>
+        <span class="setting-val" style="font-size:10px;color:var(--muted)" id="lbl-t1task">Harder → deeper blink</span>
+      </div>
+      <div class="setting-toggle" id="tog-t1task">
+        <button onclick="setT1Task('even-odd')">Even / Odd</button>
+        <button onclick="setT1Task('low-high')" class="active">Low (1–4) / High (6–9)</button>
       </div>
     </div>
     <div class="setting-row">
@@ -403,10 +413,14 @@
   </div>
   <div class="response-prompt" id="response-prompt" style="display:none;">
     <div class="response-block">
-      <div class="response-question">Was the number Even or Odd?</div>
-      <div class="response-btns">
+      <div class="response-question" id="t1-question">Was the digit Low (1–4) or High (6–9)?</div>
+      <div class="response-btns" id="t1-btns-evenodd" style="display:none;">
         <button class="resp-even" onpointerdown="answerT1('even')">Even</button>
         <button class="resp-odd"  onpointerdown="answerT1('odd')">Odd</button>
+      </div>
+      <div class="response-btns" id="t1-btns-lowhigh">
+        <button class="resp-even" onpointerdown="answerT1('low')">Low</button>
+        <button class="resp-odd"  onpointerdown="answerT1('high')">High</button>
       </div>
     </div>
     <div class="response-divider"></div>
@@ -513,7 +527,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v12 — Attentional Blink Theta Estimator
+//  θ WAVE v13 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -833,12 +847,13 @@ const FONT_FACE  = 'bold 108px Arial, Helvetica, sans-serif';
 
 // Live settings — updated by sliders, locked in by applySettings() at session start
 let CFG = {
-  t2Hex:         '#747474',
-  t1ColorMode:   'same',
-  framesPerItem: 10,
-  t1FontPx:      72,
+  t2Hex:         '#7a7a7a', // 10% contrast (trial spec)
+  t1ColorMode:   'white',   // white T1 (trial spec)
+  framesPerItem: 8,          // 67ms @ 120Hz (trial spec)
+  t1FontPx:      96,         // 96px (trial spec)
   soaMaxMs:      600,
   totalTrials:   120,
+  t1Task:        'even-odd', // 'even-odd' | 'low-high'
 };
 
 let T2_COLOR      = CFG.t2Hex;
@@ -947,6 +962,24 @@ function setT1Color(mode) {
   document.querySelectorAll('#tog-t1color button')[['same','white','red'].indexOf(mode)].classList.add('active');
 }
 
+function setT1Task(task) {
+  CFG.t1Task = task;
+  document.querySelectorAll('#tog-t1task button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#tog-t1task button')[['even-odd','low-high'].indexOf(task)].classList.add('active');
+  // Update the T1 question label live so participant sees correct instruction
+  updateT1QuestionLabel();
+}
+
+function updateT1QuestionLabel() {
+  const el = document.getElementById('t1-question');
+  if (!el) return;
+  el.textContent = CFG.t1Task === 'low-high'
+    ? 'Was the digit Low (1–4) or High (6–9)?'
+    : 'Was the number Even or Odd?';
+}
+
+let activeDigitPool = ['0','1','2','3','4','5','6','7','8','9'];
+
 function applySettings() {
   T2_COLOR        = CFG.t2Hex;
   T1_COLOR        = CFG.t1ColorMode === 'red'  ? '#cc0000'
@@ -956,10 +989,22 @@ function applySettings() {
   FRAMES_PER_ITEM = CFG.framesPerItem;
   STIM_FRAMES     = CFG.framesPerItem;
   TOTAL_TRIALS    = CFG.totalTrials;
+  // Exclude ambiguous 5 from pool in low-high mode
+  activeDigitPool = CFG.t1Task === 'low-high'
+    ? ['1','2','3','4','6','7','8','9']
+    : ['0','1','2','3','4','5','6','7','8','9'];
 }
 
 function initSettings() {
   updateSettings();
+  // Activate correct toggle states from CFG defaults
+  setT1Color(CFG.t1ColorMode);
+  setT1Task(CFG.t1Task);
+  // Update slider positions to match new defaults
+  document.getElementById('sl-t2contrast').value = 10;
+  document.getElementById('sl-speed').value      = CFG.framesPerItem;
+  document.getElementById('sl-t1font').value     = CFG.t1FontPx;
+  updateSettings(); // refresh labels
 }
 
 function startSession() {
@@ -1095,7 +1140,7 @@ function trialLoop(timestamp) {
         phaseFrame=0; phaseItem++;
         if(phaseItem >= preItems) {
           phase='t1'; phaseFrame=0;
-          t1Digit = DIGIT_POOL[Math.floor(Math.random()*DIGIT_POOL.length)];
+          t1Digit = activeDigitPool[Math.floor(Math.random()*activeDigitPool.length)];
           currentItem = {char:t1Digit, color:T1_COLOR,   role:'T1'};
         } else {
           currentItem = {char:pickLetter(), color:DIST_COLOR, role:'dist'};
@@ -1238,6 +1283,11 @@ function showResponsePrompt() {
   _t1Answer = null; _t2Answer = null;
   document.querySelectorAll('.resp-even,.resp-odd,.rating-btn')
     .forEach(b => b.classList.remove('resp-btn-selected'));
+  // Show correct T1 button set for current task mode
+  const isLH = CFG.t1Task === 'low-high';
+  document.getElementById('t1-btns-evenodd').style.display = isLH ? 'none' : 'flex';
+  document.getElementById('t1-btns-lowhigh').style.display = isLH ? 'flex' : 'none';
+  updateT1QuestionLabel();
   drawBg();
   document.getElementById('response-prompt').style.display = 'flex';
 }
@@ -1261,15 +1311,30 @@ function answerT2(rating) {
   if(_t1Answer !== null) _submitAnswers();
 }
 
+// Low/high digit sets (5 is ambiguous — excluded from T1 pool when low-high task)
+const LOW_DIGITS  = new Set(['1','2','3','4']);
+const HIGH_DIGITS = new Set(['6','7','8','9']);
+
 function _submitAnswers() {
   document.getElementById('response-prompt').style.display = 'none';
-  const isEven = EVEN_DIGITS.has(t1Digit);
-  t1Correct    = (_t1Answer === 'even') === isEven;
-  // _t2Answer is now a rating -4..+4
-  // detected = rating > 0; weight = |rating|/4 for QUEST update
-  responseReceived = _t2Answer > 0; // boolean for hit/miss logic
-  t2Rating         = _t2Answer;     // raw rating stored in trial
-  t2Weight         = Math.abs(_t2Answer) / 4; // confidence weight [0,1]
+  // Evaluate T1 accuracy based on current task mode
+  if (CFG.t1Task === 'low-high') {
+    const isLow = LOW_DIGITS.has(t1Digit);
+    const isHigh = HIGH_DIGITS.has(t1Digit);
+    if (!isLow && !isHigh) {
+      // Digit 5 — ambiguous, discard trial regardless of answer
+      t1Correct = false;
+    } else {
+      t1Correct = (_t1Answer === 'low') === isLow;
+    }
+  } else {
+    // even-odd mode
+    const isEven = EVEN_DIGITS.has(t1Digit);
+    t1Correct = (_t1Answer === 'even') === isEven;
+  }
+  responseReceived = _t2Answer > 0;
+  t2Rating         = _t2Answer;
+  t2Weight         = Math.abs(_t2Answer) / 4;
   finishTrial();
 }
 
@@ -1569,6 +1634,7 @@ function downloadCSV(){
   });
   csv+=`\nSummary\n`;
   csv+=`Model,Damped Sine (tau=250ms)\n`;
+  csv+=`T1_Task,${CFG.t1Task}\n`;
   csv+=`Freq_Hz_mean,${QUEST.meanFreq().toFixed(4)}\n`;
   csv+=`Freq_Hz_MAP,${QUEST.mapFreq().toFixed(4)}\n`;
   csv+=`Trough_ms_mean,${QUEST.meanTroughMs().toFixed(2)}\n`;
