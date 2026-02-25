@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v13</title>
+<title>θ WAVE — Attentional Blink Lab v14</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -238,7 +238,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v13</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v14</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -253,7 +253,7 @@
     <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v13 changelog:</strong> T1 task toggle: Even/Odd vs Low(1–4)/High(6–9) &middot; Digit 5 excluded in Low/High mode &middot; Trial defaults: 10% contrast, 67ms, white, 96px &middot; 2×2 rating clusters
+    <strong>v14 changelog:</strong> Catch rate slider (10–60%, default 50%) &middot; 50:50 probe/catch eliminates yes-bias &middot; T1 Low/High task &middot; Full confidence rating −4 to +4
   </div>
   <div class="settings-panel">
     <div class="settings-title">&#9881; Session Settings</div>
@@ -310,6 +310,13 @@
         <span class="setting-val" id="lbl-trials">120</span>
       </div>
       <input type="range" class="setting-slider" id="sl-trials" min="20" max="150" step="10" value="120" oninput="updateSettings();">
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">
+        <span class="setting-name">Catch Rate</span>
+        <span class="setting-val" id="lbl-catchrate">50%</span>
+      </div>
+      <input type="range" class="setting-slider" id="sl-catchrate" min="10" max="60" step="5" value="50" oninput="updateSettings();">
     </div>
   </div>
 
@@ -527,7 +534,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v13 — Attentional Blink Theta Estimator
+//  θ WAVE v14 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -854,6 +861,7 @@ let CFG = {
   soaMaxMs:      600,
   totalTrials:   120,
   t1Task:        'even-odd', // 'even-odd' | 'low-high'
+  catchRate:     0.50,       // fraction of trials with no T2
 };
 
 let T2_COLOR      = CFG.t2Hex;
@@ -866,7 +874,7 @@ const LETTER_POOL     = ['K','V','Y','Z','N','W','M','H','I','T','F','E','L','J'
 // X-confusable letters dominate: K,V,Y,Z,N,W share strokes with X (X itself excluded — T2 only)
 const DIGIT_POOL      = ['0','1','2','3','4','5','6','7','8','9'];
 const EVEN_DIGITS     = new Set(['0','2','4','6','8']);
-const CATCH_RATE      = 0.25; // fraction of trials with no T2 (~25% keeps participant honest)
+// CATCH_RATE is now CFG.catchRate — set in settings panel
 const RUNOUT_ITEMS    = 5;    // distractor items always shown after T2/catch position
 
 let canvas, ctx, animFrame;
@@ -954,6 +962,9 @@ function updateSettings() {
 
   CFG.totalTrials = parseInt(document.getElementById('sl-trials').value);
   document.getElementById('lbl-trials').textContent = CFG.totalTrials;
+
+  CFG.catchRate = parseInt(document.getElementById('sl-catchrate').value) / 100;
+  document.getElementById('lbl-catchrate').textContent = Math.round(CFG.catchRate*100) + '%';
 }
 
 function setT1Color(mode) {
@@ -979,6 +990,7 @@ function updateT1QuestionLabel() {
 }
 
 let activeDigitPool = ['0','1','2','3','4','5','6','7','8','9'];
+let CATCH_RATE = 0.50;
 
 function applySettings() {
   T2_COLOR        = CFG.t2Hex;
@@ -993,6 +1005,7 @@ function applySettings() {
   activeDigitPool = CFG.t1Task === 'low-high'
     ? ['1','2','3','4','6','7','8','9']
     : ['0','1','2','3','4','5','6','7','8','9'];
+  CATCH_RATE = CFG.catchRate;
 }
 
 function initSettings() {
@@ -1004,6 +1017,7 @@ function initSettings() {
   document.getElementById('sl-t2contrast').value = 10;
   document.getElementById('sl-speed').value      = CFG.framesPerItem;
   document.getElementById('sl-t1font').value     = CFG.t1FontPx;
+  document.getElementById('sl-catchrate').value = Math.round(CFG.catchRate * 100);
   updateSettings(); // refresh labels
 }
 
