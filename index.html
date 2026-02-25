@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>θ WAVE — Attentional Blink Lab v14</title>
+<title>θ WAVE — Attentional Blink Lab v15</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -238,7 +238,7 @@
 <div id="home-screen" class="screen">
   <div>
     <div class="logo-theta">θ</div>
-    <div class="logo-sub">Neural Theta Frequency Estimator · v14</div>
+    <div class="logo-sub">Neural Theta Frequency Estimator · v15</div>
   </div>
   <div class="badge-row">
     <span class="badge">RSVP 120Hz</span>
@@ -253,7 +253,7 @@
     <p>Rapid gray letters flash on screen. A red <strong style="color:var(--danger)">digit</strong> flashes among gray letters. You must identify it (Even or Odd?) — this captures your attention and resets theta phase. Shortly after, a gray <strong style="color:var(--text)">X</strong> may appear. Answer both questions after each trial. Only trials where you correctly identified the digit count toward your theta estimate — ensuring the blink is real.</p>
   </div>
   <div class="changelog">
-    <strong>v14 changelog:</strong> Catch rate slider (10–60%, default 50%) &middot; 50:50 probe/catch eliminates yes-bias &middot; T1 Low/High task &middot; Full confidence rating −4 to +4
+    <strong>v15 changelog:</strong> Real-time SDT bias correction &middot; QUEST weights adjusted by running FA rate &middot; Hits downweighted / misses upweighted when criterion is liberal &middot; FA rate live in HUD &middot; Activates after 10 catch trials
   </div>
   <div class="settings-panel">
     <div class="settings-title">&#9881; Session Settings</div>
@@ -409,6 +409,10 @@
       <div class="hud-label">T1 Acc</div>
       <div class="hud-val" id="hud-t1acc">—</div>
     </div>
+    <div class="hud-item" style="align-items:center;">
+      <div class="hud-label">FA Rate</div>
+      <div class="hud-val" id="hud-farate">—</div>
+    </div>
     <div class="hud-item" id="hud-soa-item" style="align-items:center;visibility:hidden;">
       <div class="hud-label">T1&rarr;T2 SOA</div>
       <div class="hud-val" id="hud-soa">—</div>
@@ -534,7 +538,7 @@
 <!-- ══════════════════════════════════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════════════════════════════════
-//  θ WAVE v14 — Attentional Blink Theta Estimator
+//  θ WAVE v15 — Attentional Blink Theta Estimator
 //
 //  Five psychophysics refinements applied:
 //
@@ -908,6 +912,10 @@ let t1Digit       = '';   // digit shown as T1 this trial
 let t1Correct     = false; // true if participant correctly identified Even/Odd
 let t1Discarded   = 0;    // running count of T1-failed trials (not fed to QUEST)
 let falseAlarms      = 0;
+let catchCorrect     = 0;  // catch trials where T1 correct and response given
+let sdtFARate        = 0.5; // running FA rate, initialised to neutral 0.5
+let sdtMinCatches    = 10;  // catches needed before correction kicks in
+let sdtActive        = false; // true once we have enough catches
 
 // Letter state for current item
 let currentItem = null;
@@ -1028,6 +1036,9 @@ function startSession() {
   probeHits={}; probeMisses={}; probeRatings={};
   falseAlarms=0;
   t1Discarded=0;
+  catchCorrect=0;
+  sdtFARate=0.5;
+  sdtActive=false;
   msPerFrame = 1000 / (measuredFPS||120);
   soaCandidates = buildSOACandidates(msPerFrame);
 
@@ -1385,20 +1396,35 @@ function finishTrial(){
   trials[currentTrial].t1Correct = t1Correct;
 
   if(isCatch){
-    // Catch trials: T1 still present, evaluate Even/Odd, but no T2 to detect
-    // Yes response on catch = false alarm (only when T1 was correctly processed)
-    if(t1Correct && detected) falseAlarms++;
+    if(t1Correct) {
+      catchCorrect++;
+      if(detected) falseAlarms++;
+      // Update running FA rate after every catch
+      sdtFARate = falseAlarms / catchCorrect;
+      // Activate SDT correction once we have enough catches
+      if(catchCorrect >= sdtMinCatches) sdtActive = true;
+    }
   } else {
     if(!t1Correct) {
-      // T1 missed or wrong — discard T2 data, don't feed QUEST
       t1Discarded++;
     } else {
-      // T1 correct — T2 detection is valid, feed QUEST
       const soa = currentSOA_ms;
       if(!probeHits[soa]){probeHits[soa]=0; probeMisses[soa]=0; probeRatings[soa]=[];}
       if(detected) probeHits[soa]++; else probeMisses[soa]++;
       probeRatings[soa].push(t2Rating);
-      QUEST.update(detected?1:0, soa, t2Weight);
+
+      // SDT-corrected weight:
+      // Raw weight = |rating|/4 (confidence)
+      // Correction: hits downweighted when FA is high (bias-driven yes)
+      //             misses upweighted when FA is high (overcame yes-bias to say no)
+      // Before sdtActive: use raw weight only (neutral FA=0.5 → no change)
+      const fa   = sdtActive ? Math.max(0.05, Math.min(0.95, sdtFARate)) : 0.5;
+      const conf = Math.abs(t2Rating) / 4; // 0.25..1.0
+      const sdtWeight = detected
+        ? conf * (1 - fa)   // hit: less diagnostic when FA is high
+        : conf * fa;         // miss: more diagnostic when FA is high (overcame bias)
+
+      QUEST.update(detected?1:0, soa, sdtWeight);
       const ni = currentTrial+1;
       if(ni<TOTAL_TRIALS && trials[ni] && !trials[ni].isCatch && trials[ni].soa_ms===null)
         trials[ni].soa_ms = QUEST.nextSOA(soaCandidates);
@@ -1419,6 +1445,19 @@ function updateHUD(){
     const t1acc = t1done.filter(t=>t.t1Correct).length/t1done.length;
     const t1el = document.getElementById('hud-t1acc');
     if(t1el) t1el.textContent=(t1acc*100).toFixed(0)+'%';
+  }
+  const fael = document.getElementById('hud-farate');
+  if(fael) {
+    if(catchCorrect === 0) {
+      fael.textContent = '—';
+      fael.style.color = '';
+    } else {
+      const faPct = Math.round(sdtFARate*100);
+      fael.textContent = faPct + '%' + (sdtActive ? ' ✓' : '');
+      fael.style.color = sdtActive
+        ? (faPct > 40 ? 'var(--danger)' : 'var(--success)')
+        : 'var(--muted)';
+    }
   }
   if(DEBUG_MODE) document.getElementById('hud-soa').textContent=isCatch?'catch':currentSOA_ms+'ms';
   const c=(QUEST.confidence()*100).toFixed(0);
@@ -1489,7 +1528,10 @@ function endSession(){
     `Blink depth A=${ampVal.toFixed(2)} (model), ↓${blinkDepth}% (empirical). ` +
     `${freqInterp}` +
     `<br><br>False alarm rate: <strong>${faRate}%</strong> on ${catchTrials} catch trials. ` +
-    `${falseAlarms > catchTrials*0.4 ? '⚠ High false alarm rate — response criterion may be too liberal.' : 'Response criterion looks appropriate.'}` +
+    `${falseAlarms > catchTrials*0.4
+      ? '⚠ High FA rate — SDT correction was active, QUEST posteriors bias-adjusted.'
+      : 'FA rate acceptable — SDT correction made minimal adjustments.'}`  +
+  (sdtActive ? '' : ' ⚠ Too few catch trials for SDT correction this session.') +
     `<br>Confidence: <strong style="color:${confColor}">${confLabel} (${confPct}%)</strong>. ` +
     `${conf<0.5?'Posterior is broad — run another session to sharpen the estimate.':'Posterior is focused. This frequency may be your neural fingerprint.'}`;
 
@@ -1660,6 +1702,8 @@ function downloadCSV(){
   const t1answ=trials.filter(t=>!t.isCatch&&t.t1Correct!==undefined);
   csv+=`T1_accuracy,${t1answ.length?((t1answ.filter(t=>t.t1Correct).length/t1answ.length)*100).toFixed(1)+'%':'—'}\n`;
   csv+=`False_alarms,${falseAlarms}\n`;
+  csv+=`FA_rate,${catchCorrect>0?(sdtFARate*100).toFixed(1)+'%':'—'}\n`;
+  csv+=`SDT_correction,${sdtActive?'active ('+sdtMinCatches+'+ catches)':'insufficient catches'}\n`;
 
   const blob=new Blob([csv],{type:'text/csv'});
   const url=URL.createObjectURL(blob);
